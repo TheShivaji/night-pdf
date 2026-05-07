@@ -2,136 +2,153 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 import pdf from "pdf-poppler";
+import { PDFDocument } from "pdf-lib";
+import { promises } from "dns";
 
 export const uploadPDF = async (req, res) => {
-    const theme = req.query.theme || "normal"; // Default to normal
+    const theme = req.query.theme || "normal";
     console.log("Processing theme:", theme);
 
     try {
-        const uploadsDir = "uploads";
-        const pdfPath = path.join(uploadsDir, `input_${Date.now()}.pdf`); // Unique name
+        const uploadsDir = path.resolve("uploads").replace(/\\/g, '/')
+        const pdfPath = `${uploadsDir}/input_${Date.now()}.pdf`;
 
-        // 0. Ensure directory exists and save PDF
+        // 0. Directory banao + PDF save karo
         if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
         fs.writeFileSync(pdfPath, req.file.buffer);
 
-        const opts = {
-            density: 300,
-            format: "png",
-            out_dir: uploadsDir,
-            out_prefix: path.basename(pdfPath, '.pdf'),
-            page: 1
-        };
+        // 1. Total pages nikalo
+        const info = await pdf.info(pdfPath)
+        const totalPages = info.pages
+        console.log("Total pages:", totalPages)
 
-        // 1. Convert PDF to PNG
-        await pdf.convert(pdfPath, opts);
-        const imagePath = path.join(uploadsDir, `${opts.out_prefix}-01.png`);
+        // 2. Har page convert karo + theme apply karo
+        const darkImageBuffers = []
 
-        
+        await Promise.all(Array.from({ length: totalPages }, async (_, i) => {
+            // PDF to PNG
+            const opts = {
+                density: 400,
+                format: "png",
+                out_dir: uploadsDir,
+                out_prefix: path.basename(pdfPath, '.pdf'),
+                page: i + 1
+            };
+            await pdf.convert(pdfPath, opts);
 
-        // Check if image exists
-        if (!fs.existsSync(imagePath)) {
-            throw new Error("PDF to Image conversion failed.");
+            const pageNum = String(i + 1).padStart(2, "0")
+            const imagePath = path.join(uploadsDir, `${opts.out_prefix}-${pageNum}.png`)
+
+            if (!fs.existsSync(imagePath)) {
+                throw new Error(`Page ${i + 1} conversion failed`)
+            }
+
+            console.log(`Theme apply kar raha hoon page ${i + 1}/${totalPages}`)
+
+            // Metadata lo
+            const metadata = await sharp(imagePath).metadata()
+
+            // Text layer banao
+            const textLayer = await sharp(imagePath)
+                .resize(metadata.width, metadata.height, {
+                    kernel: sharp.kernel.lanczos3
+                })
+                .negate({ alpha: false })
+                .threshold(180)
+                .blur(0.3)
+                .sharpen(70, 1)
+                .ensureAlpha()
+                .unflatten()
+                .toBuffer()
+
+            // Theme apply karo
+            let finalBuffer;
+
+            switch (theme) {
+                case "dark":
+                    finalBuffer = await sharp({
+                        create: { width: metadata.width, height: metadata.height, channels: 3, background: "#1a1a1a" }
+                    }).composite([{ input: textLayer, blend: 'screen' }]).png().toBuffer()
+                    break;
+
+                case "amoled":
+                    finalBuffer = await sharp({
+                        create: { width: metadata.width, height: metadata.height, channels: 3, background: "#000000" }
+                    }).composite([{ input: textLayer, blend: 'screen' }]).png().toBuffer()
+                    break;
+
+                case "sepia":
+                    const sepiaText = await sharp(textLayer).tint("#704214").toBuffer()
+                    finalBuffer = await sharp({
+                        create: { width: metadata.width, height: metadata.height, channels: 3, background: "#f4ecd8" }
+                    }).composite([{ input: sepiaText, blend: 'multiply' }]).png().toBuffer()
+                    break;
+
+                case "midnight":
+                    const midnightText = await sharp(textLayer).tint("#e2e8f0").toBuffer()
+                    finalBuffer = await sharp({
+                        create: { width: metadata.width, height: metadata.height, channels: 3, background: "#101827" }
+                    }).composite([{ input: midnightText, blend: 'screen' }]).png().toBuffer()
+                    break;
+
+                case "dracula":
+                    const draculaText = await sharp(textLayer).tint("#bd93f9").toBuffer()
+                    finalBuffer = await sharp({
+                        create: { width: metadata.width, height: metadata.height, channels: 3, background: "#282a36" }
+                    }).composite([{ input: draculaText, blend: 'screen' }]).png().toBuffer()
+                    break;
+
+                case "forest":
+                    const forestText = await sharp(textLayer).tint("#a7f3d0").toBuffer()
+                    finalBuffer = await sharp({
+                        create: { width: metadata.width, height: metadata.height, channels: 3, background: "#166534" }
+                    }).composite([{ input: forestText, blend: 'screen' }]).png().toBuffer()
+                    break;
+
+                case "cool":
+                    const coolText = await sharp(textLayer).tint("#10a37f").toBuffer()
+                    finalBuffer = await sharp({
+                        create: { width: metadata.width, height: metadata.height, channels: 3, background: "#343541" }
+                    }).composite([{ input: coolText, blend: 'screen' }]).png().toBuffer()
+                    break;
+
+                case "normal":
+                default:
+                    finalBuffer = await sharp(imagePath).png().toBuffer()
+                    break;
+            }
+
+            darkImageBuffers.push({
+                buffer: finalBuffer,
+                width: metadata.width,
+                height: metadata.height
+            })
+
+            // Temp image delete karo
+            fs.unlinkSync(imagePath)
+        }
+        ))
+
+        console.log("Sab pages dark ho gaye!", darkImageBuffers.length)
+
+    // 3. Sab images ko ek PDF mein daalo
+    const newPdf = await PDFDocument.create()
+
+        for (const { buffer, width, height } of darkImageBuffers) {
+            const img = await newPdf.embedPng(buffer)
+            const page = newPdf.addPage([width, height])
+            page.drawImage(img, { x: 0, y: 0, width, height })
         }
 
-        // 2. Common logic to create transparent text layer
-        const metadata = await sharp(imagePath).metadata();
-        
-        // This pipeline makes text white and background transparent
-        const textLayerPipeline = sharp(imagePath)
-            .negate({ alpha: false }) // Invert: background black, text white
-            .threshold(128) // Make it pure black and white
-            .ensureAlpha() // Add alpha channel
-            .unflatten(); // Use black as transparency (works because foreground is white)
+        const pdfBytes = await newPdf.save()
 
-        const textLayerBuffer = await textLayerPipeline.toBuffer();
+        // 4. Original PDF delete karo
+        fs.unlink(pdfPath, (err) => err && console.error(err))
 
-        let backgroundColor;
-        let finalImagePipeline;
-
-        // --- THEME DEFINITIONS ---
-
-        switch (theme) {
-            case "dark":
-                backgroundColor = "#1a1a1a"; // Dark Gray Background
-                // Text remains white
-                finalImagePipeline = sharp({
-                    create: {
-                        width: metadata.width,
-                        height: metadata.height,
-                        channels: 3,
-                        background: backgroundColor
-                    }
-                }).composite([{ input: textLayerBuffer, blend: 'screen' }]); 
-                // 'screen' blend mode works best for white text on dark bg
-                break;
-
-            case "amoled":
-                backgroundColor = "#000000"; // Pure Black Background
-                finalImagePipeline = sharp({
-                    create: { width: metadata.width, height: metadata.height, channels: 3, background: backgroundColor }
-                }).composite([{ input: textLayerBuffer, blend: 'screen' }]);
-                break;
-
-            case "sepia":
-                // For sepia, we tint the text AND use a colored background
-                backgroundColor = "#f4ecd8"; // Light cream background
-                const sepiaText = await sharp(textLayerBuffer).tint("#704214").toBuffer();
-                finalImagePipeline = sharp({
-                    create: { width: metadata.width, height: metadata.height, channels: 3, background: backgroundColor }
-                }).composite([{ input: sepiaText, blend: 'multiply' }]); 
-                // 'multiply' is better for dark text on light background
-                break;
-
-            case "midnight":
-                backgroundColor = "#101827"; // Deep Blue-Black Background
-                const midnightText = await sharp(textLayerBuffer).tint("#e2e8f0").toBuffer(); // Light gray text
-                finalImagePipeline = sharp({
-                    create: { width: metadata.width, height: metadata.height, channels: 3, background: backgroundColor }
-                }).composite([{ input: midnightText, blend: 'screen' }]);
-                break;
-
-            case "dracula":
-                backgroundColor = "#282a36"; // Dracula background
-                const draculaText = await sharp(textLayerBuffer).tint("#bd93f9").toBuffer(); // Purple text
-                finalImagePipeline = sharp({
-                    create: { width: metadata.width, height: metadata.height, channels: 3, background: backgroundColor }
-                }).composite([{ input: draculaText, blend: 'screen' }]);
-                break;
-
-            case "forest":
-                backgroundColor = "#166534"; // Dark Green Background
-                const forestText = await sharp(textLayerBuffer).tint("#a7f3d0").toBuffer(); // Pale green text
-                finalImagePipeline = sharp({
-                    create: { width: metadata.width, height: metadata.height, channels: 3, background: backgroundColor }
-                }).composite([{ input: forestText, blend: 'screen' }]);
-                break;
-
-            case "cool":
-                backgroundColor = "#343541"; // ChatGPT dark background
-                const coolText = await sharp(textLayerBuffer).tint("#10a37f").toBuffer(); // ChatGPT green text
-                finalImagePipeline = sharp({
-                    create: { width: metadata.width, height: metadata.height, channels: 3, background: backgroundColor }
-                }).composite([{ input: coolText, blend: 'screen' }]);
-                break;
-
-            case "normal":
-            default:
-                finalImagePipeline = sharp(imagePath); // No transformation
-                break;
-        }
-
-        // 3. Generate final image buffer
-        const processedImageBuffer = await finalImagePipeline.png().toBuffer();
-
-        // 4. Cleanup temporary files asynchronously
-        fs.unlink(pdfPath, (err) => err && console.error("Error deleting PDF:", err));
-        fs.unlink(imagePath, (err) => err && console.error("Error deleting image:", err));
-
-        // 5. Send response
-        res.set("Content-Type", "image/png");
-        fs.writeFileSync("output.png", processedImageBuffer);
-        return res.send(processedImageBuffer);
+        // 5. PDF response bhejo
+        res.set("Content-Type", "application/pdf")
+        res.set("Content-Disposition", "attachment; filename=dark-output.pdf")
+        return res.send(Buffer.from(pdfBytes))
 
     } catch (error) {
         console.error("Error in uploadPDF controller:", error);
