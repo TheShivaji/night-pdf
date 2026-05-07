@@ -18,11 +18,10 @@ Whether you're reading research papers late at night or going through documents 
 ---
 
 ## ✨ Features
-
-- 🌑 **Dark Mode Conversion** — Converts white/bright PDFs to dark-themed versions
+- 🌑 **7 Dark Themes** — Dark, Amoled, Sepia, Midnight, Dracula, Forest, Cool
 - 👁️ **Eye Friendly** — Reduces eye strain during night reading
 - ⚡ **Backend Processing** — Fast server-side PDF transformation
-- 📄 **Preserves Formatting** — Keeps original layout, fonts, and structure intact
+- 📄 **Multi-page Support** — Converts all pages of the PDF
 - 🔧 **Simple API** — Easy to integrate into existing workflows
 
 ---
@@ -120,13 +119,17 @@ night-pdf/
 ## 🛣️ Roadmap
 
 - [x] Basic project setup
-- [ ] PDF upload and parsing
-- [ ] Dark theme color transformation
-- [ ] REST API endpoint
-- [ ] File output and download
-- [ ] Support for custom dark themes
+- [x] PDF upload and parsing
+- [x] Dark theme color transformation
+- [x] REST API endpoint
+- [x] Multi-page PDF support
+- [x] 7 custom dark themes
 - [ ] Frontend UI (web interface)
 - [ ] Docker support
+- [ ] OCR support
+- [ ] PDF Compress/Merge
+
+---
 
 ---
 
