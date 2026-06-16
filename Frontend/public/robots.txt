@@ -1,0 +1,32 @@
+# Robots.txt for Night PDF - Optimize indexing for search engines and AI agents
+User-agent: *
+Allow: /
+
+# Specifically allow AI search and crawler agents
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Omgilibot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+# Host & Sitemap
+Host: https://nightpdf.com
+Sitemap: https://nightpdf.com/sitemap.xml

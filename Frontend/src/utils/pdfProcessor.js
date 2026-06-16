@@ -1,0 +1,134 @@
+// PDF Processing engine using PDF.js and pdf-lib client-side
+import * as pdfjsLib from 'pdfjs-dist';
+import { PDFDocument } from 'pdf-lib';
+import { applyThemeToImageData } from './themeEngine';
+
+// Set up the PDFJS worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
+
+/**
+ * Thicken text on canvas by redrawing it with small offsets.
+ * @param {HTMLCanvasElement} canvas 
+ * @param {number} boldness - pixel offset (e.g. 0.5 to 2.0)
+ */
+export function applyBoldingToCanvas(canvas, boldness) {
+  if (!boldness || boldness <= 0) return;
+  
+  const ctx = canvas.getContext('2d');
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(canvas, 0, 0);
+
+  // Redraw with directional offsets at lower opacity to dilate text lines
+  ctx.globalAlpha = 0.35;
+  ctx.drawImage(tempCanvas, -boldness, 0);
+  ctx.drawImage(tempCanvas, boldness, 0);
+  ctx.drawImage(tempCanvas, 0, -boldness);
+  ctx.drawImage(tempCanvas, 0, boldness);
+  
+  // Reset opacity
+  ctx.globalAlpha = 1.0;
+}
+
+/**
+ * Loads a PDF file and returns the PDF Document object.
+ * @param {File} file - PDF file uploaded by user
+ * @returns {Promise<pdfjsLib.PDFDocumentProxy>}
+ */
+export async function loadPdfDocument(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  return await loadingTask.promise;
+}
+
+/**
+ * Converts a PDF to the selected theme and compiles a new PDF bytes.
+ * @param {pdfjsLib.PDFDocumentProxy} pdfDoc - PDFJS Document object
+ * @param {string} themeId - Theme preset key
+ * @param {object} options - Options { mode: 'smart' | 'duotone' | 'original', scale: number, brightness: number, contrast: number, boldness: number }
+ * @param {function} onProgress - Progress callback ({ current, total, status })
+ * @returns {Promise<Uint8Array>} Converted PDF bytes
+ */
+export async function convertPdfTheme(pdfDoc, themeId, options = {}, onProgress = () => {}) {
+  const numPages = pdfDoc.numPages;
+  const scale = options.scale || 2.0; // default to 2x for high quality text
+  const mode = options.mode || 'smart';
+  const brightness = options.brightness || 0;
+  const contrast = options.contrast || 0;
+  const boldness = options.boldness || 0;
+
+  // Create a new PDF document using pdf-lib
+  const newPdf = await PDFDocument.create();
+
+  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+    onProgress({ current: pageNum, total: numPages, status: 'processing' });
+
+    // 1. Get the PDF page
+    const page = await pdfDoc.getPage(pageNum);
+    
+    // 2. Get viewport at desired scale
+    const viewport = page.getViewport({ scale });
+    
+    // 3. Create canvas and render page
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    
+    const ctx = canvas.getContext('2d');
+    
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport,
+    };
+    
+    await page.render(renderContext).promise;
+
+    // 3.5. Apply text bolding (dilation) on original page render if specified
+    if (boldness > 0) {
+      applyBoldingToCanvas(canvas, boldness);
+    }
+
+    // 4. Apply theme and adjustments to canvas image data
+    const isNormal = themeId === 'normal';
+    const hasAdjustments = brightness !== 0 || contrast !== 0;
+
+    if (!isNormal || hasAdjustments || mode === 'original') {
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      applyThemeToImageData(imgData, themeId, { mode, brightness, contrast });
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 5. Convert canvas to png image bytes
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob(resolve, 'image/png');
+    });
+    
+    const pageImgBytes = await blob.arrayBuffer();
+
+    // 6. Embed image into pdf-lib document
+    const embeddedImg = await newPdf.embedPng(pageImgBytes);
+    
+    // In pdf-lib, page size is set in points (72 points per inch)
+    const originalViewport = page.getViewport({ scale: 1.0 });
+    const newPage = newPdf.addPage([originalViewport.width, originalViewport.height]);
+    
+    newPage.drawImage(embeddedImg, {
+      x: 0,
+      y: 0,
+      width: originalViewport.width,
+      height: originalViewport.height,
+    });
+  }
+
+  onProgress({ current: numPages, total: numPages, status: 'saving' });
+  
+  // Save PDF as Uint8Array bytes
+  const pdfBytes = await newPdf.save();
+  return pdfBytes;
+}

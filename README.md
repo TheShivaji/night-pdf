@@ -1,94 +1,88 @@
 # 🌙 Night PDF
 
-> **Convert bright, eye-straining PDFs into dark-themed, night-friendly documents.**
+> **Convert bright, eye-straining PDFs into dark-themed, night-friendly documents — 100% in your browser.**
 
 [![JavaScript](https://img.shields.io/badge/Language-JavaScript-F7DF1E?style=flat-square&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![Node.js](https://img.shields.io/badge/Runtime-Node.js-339933?style=flat-square&logo=nodedotjs)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/Framework-React-61DAFB?style=flat-square&logo=react)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-In%20Development-orange?style=flat-square)]()
 
 ---
 
 ## 📖 What is Night PDF?
 
-**Night PDF** is a backend PDF processing tool that takes regular (bright/white-background) PDF files and converts them into **dark-themed documents** — making them easier to read at night or in low-light conditions without straining your eyes.
+**Night PDF** is an eye-friendly PDF reader and converter. While the project originally started as a backend API, it has been upgraded to a **100% client-side web application**. 
 
-Whether you're reading research papers late at night or going through documents after hours, Night PDF has you covered. 🌚
+Now, you can upload, read, and convert bright, high-glare PDFs into gorgeous dark-themed documents directly inside your browser. No files are uploaded to any server, ensuring complete privacy, zero network delay, and lightning-fast previews!
 
 ---
 
 ## ✨ Features
-- 🌑 **7 Dark Themes** — Dark, Amoled, Sepia, Midnight, Dracula, Forest, Cool
-- 👁️ **Eye Friendly** — Reduces eye strain during night reading
-- ⚡ **Backend Processing** — Fast server-side PDF transformation
-- 📄 **Multi-page Support** — Converts all pages of the PDF
-- 🔧 **Simple API** — Easy to integrate into existing workflows
+
+- 🌑 **8 Eye-Friendly Themes** — Dark Mode, Amoled Black, Sepia Reader, Midnight Blue, Dracula Purple, Forest Green, Cool Slate, and Original.
+- 👁️ **Smart Color Preservation** — An advanced HSL-based conversion mode that inverts bright backgrounds but preserves the hue and contrast of colored text, graphs, diagrams, and illustrations so they remain readable in dark mode.
+- ⚡ **Real-Time Interactive Reader** — Read pages immediately with zoom, page-flipping, and theme previews without waiting for full document conversion.
+- 🛡️ **100% Private & Secure** — All processing happens locally in your browser using Web APIs. Your files never leave your computer.
+- 🔧 **Customizable Quality** — Choose output resolution from Normal (1x scale for small sizes) to Ultra Crisp (3x scale) to fit your reading and printing needs.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started (Client-Side Web App)
 
 ### Prerequisites
-
 - [Node.js](https://nodejs.org/) v16 or higher
 - npm or yarn
 
-### Installation
+### Run the App Locally
+1. Clone the repository and navigate to the `Frontend` directory:
+   ```bash
+   cd pdf/Frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open the displayed URL (usually `http://localhost:5173/` or `http://localhost:5174/`) in your browser.
 
+### Build for Production
+To bundle the static application for free deployment on GitHub Pages, Vercel, or Netlify:
 ```bash
-# Clone the repository
-git clone https://github.com/TheShivaji/night-pdf.git
-
-# Navigate to the backend directory
-cd night-pdf/Backend
-
-# Install dependencies
-npm install
+npm run build
 ```
-
-### Running the Server
-
-```bash
-# Start the backend server
-npm start
-
-# Or for development with hot-reload
-npm run dev
-```
+The output files will be created in the `Frontend/dist/` directory.
 
 ---
 
-## 🛠️ Usage
+## 🛠️ Original Backend API (Optional Alternative)
+
+If you need a backend REST API endpoint for server-to-server PDF conversion:
+
+### Running the Backend Server
+1. Navigate to the `Backend` directory:
+   ```bash
+   cd pdf/Backend
+   ```
+2. Install backend dependencies (requires system installation of `poppler` binaries):
+   ```bash
+   npm install
+   ```
+3. Start the server:
+   ```bash
+   npm run dev
+   ```
 
 ### API Endpoint
+**POST** `http://localhost:3000/api/user/upload`
 
-**POST** `/convert`
-
-Send a PDF file to the server and receive a dark-themed version in response.
-
+Upload a PDF file and request a theme parameter (e.g. `?theme=dark`):
 ```bash
-curl -X POST http://localhost:3000/convert \
-  -F "file=@your-document.pdf" \
+curl -X POST http://localhost:3000/api/user/upload?theme=dark \
+  -F "pdf=@your-document.pdf" \
   -o dark-document.pdf
-```
-
-### Example (JavaScript)
-
-```javascript
-const FormData = require('form-data');
-const fs = require('fs');
-const axios = require('axios');
-
-const form = new FormData();
-form.append('file', fs.createReadStream('./my-document.pdf'));
-
-const response = await axios.post('http://localhost:3000/convert', form, {
-  headers: form.getHeaders(),
-  responseType: 'arraybuffer'
-});
-
-fs.writeFileSync('./dark-my-document.pdf', response.data);
-console.log('Dark PDF saved!');
 ```
 
 ---
@@ -97,66 +91,19 @@ console.log('Dark PDF saved!');
 
 ```
 night-pdf/
-└── Backend/
-    ├── index.js          # Entry point / Express server
-    ├── routes/           # API route handlers
-    ├── controllers/      # PDF processing logic
-    ├── utils/            # Helper functions
-    └── package.json      # Dependencies
+├── Frontend/           # Brand new client-side React App (Vite)
+│   ├── src/
+│   │   ├── utils/
+│   │   │   ├── themeEngine.js   # Custom HSL canvas pixel processor
+│   │   │   └── pdfProcessor.js  # pdfjs-dist & pdf-lib assembler
+│   │   ├── App.jsx              # Main UI layout and interaction
+│   │   └── index.css            # Custom glassmorphic CSS styling
+│   └── package.json
+└── Backend/            # Express server for alternative API processing
 ```
-
----
-
-## 🧠 How It Works
-
-1. **Upload** — User sends a PDF file via the API
-2. **Parse** — Backend reads and parses the PDF structure
-3. **Transform** — Background colors are inverted/darkened; text colors are adjusted for contrast
-4. **Export** — A new dark-themed PDF is generated and returned
-
----
-
-## 🛣️ Roadmap
-
-- [x] Basic project setup
-- [x] PDF upload and parsing
-- [x] Dark theme color transformation
-- [x] REST API endpoint
-- [x] Multi-page PDF support
-- [x] 7 custom dark themes
-- [ ] Frontend UI (web interface)
-- [ ] Docker support
-- [ ] OCR support
-- [ ] PDF Compress/Merge
-
----
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/awesome-feature`)
-3. Commit your changes (`git commit -m 'Add awesome feature'`)
-4. Push to the branch (`git push origin feature/awesome-feature`)
-5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Author
-
-**TheShivaji**
-
-- GitHub: [@TheShivaji](https://github.com/TheShivaji)
-
----
-
-<p align="center">Made with ❤️ and a lot of late nights 🌙</p>
