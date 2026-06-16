@@ -28,5 +28,5 @@ User-agent: facebookexternalhit
 Allow: /
 
 # Host & Sitemap
-Host: https://nightpdf.com
-Sitemap: https://nightpdf.com/sitemap.xml
+Host: https://pdf.theshivaji.in
+Sitemap: https://pdf.theshivaji.in/sitemap.xml
