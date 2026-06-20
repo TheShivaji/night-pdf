@@ -8,24 +8,29 @@ import {
   Moon,
   ScrollText,
   BookOpen,
-  X
+  X,
+  Maximize,
+  Minimize
 } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
 import UploadZone from './UploadZone';
 import { applyThemeToImageData } from '../utils/themeEngine';
 import { applyBoldingToCanvas } from '../utils/pdfProcessor';
 
-// Helper component for Lazy Rendering a Single Page in Continuous Scroll Mode
+// Helper component for Lazy Rendering a Single Page in Continuous Scroll / Book Mode
 function PDFPageCanvas({ 
   pdfDoc, 
   pageNum, 
   zoom, 
   selectedTheme, 
+  customTheme,
   mode, 
   brightness, 
   contrast,
   boldness
 }) {
   const canvasRef = useRef(null);
+  const textLayerRef = useRef(null);
   const containerRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 600, height: 800 });
@@ -66,7 +71,7 @@ function PDFPageCanvas({
     };
   }, []);
 
-  // 3. Render page when visible
+  // 3. Render page and text layer when visible
   useEffect(() => {
     if (!isVisible) return;
 
@@ -112,8 +117,26 @@ function PDFPageCanvas({
 
         if (!isNormal || hasAdjustments || mode === 'original') {
           const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          applyThemeToImageData(imgData, selectedTheme, { mode, brightness, contrast });
+          applyThemeToImageData(imgData, selectedTheme, { 
+            mode, 
+            brightness, 
+            contrast,
+            customTheme 
+          });
           ctx.putImageData(imgData, 0, 0);
+        }
+
+        // Render Text Layer for copy-paste & native search selection
+        const textContent = await page.getTextContent();
+        const textLayerDiv = textLayerRef.current;
+        if (textLayerDiv) {
+          textLayerDiv.innerHTML = '';
+          const textLayer = new pdfjsLib.TextLayer({
+            textContentSource: textContent,
+            container: textLayerDiv,
+            viewport: viewport
+          });
+          await textLayer.render();
         }
       } catch (err) {
         if (err.name !== 'RenderingCancelledException') {
@@ -130,7 +153,7 @@ function PDFPageCanvas({
         renderTaskRef.current.cancel();
       }
     };
-  }, [isVisible, pdfDoc, pageNum, zoom, selectedTheme, mode, brightness, contrast, boldness]);
+  }, [isVisible, pdfDoc, pageNum, zoom, selectedTheme, customTheme, mode, brightness, contrast, boldness]);
 
   return (
     <div 
@@ -140,11 +163,15 @@ function PDFPageCanvas({
         width: '100%',
         maxWidth: `${dimensions.width * zoom}px`,
         aspectRatio: `${dimensions.width} / ${dimensions.height}`,
-        marginBottom: '20px'
+        marginBottom: '20px',
+        position: 'relative'
       }}
     >
       {isVisible ? (
-        <canvas ref={canvasRef} className="viewer-canvas" />
+        <>
+          <canvas ref={canvasRef} className="viewer-canvas" />
+          <div ref={textLayerRef} className="textLayer" />
+        </>
       ) : (
         <div style={{ 
           width: '100%', 
@@ -171,6 +198,7 @@ export default function PDFViewer({
   zoom,
   setZoom,
   selectedTheme,
+  customTheme,
   mode,
   brightness,
   contrast,
@@ -181,15 +209,45 @@ export default function PDFViewer({
   isProcessing,
   onFileSelected,
   clearFile,
-  errorMsg
+  errorMsg,
+  recentFiles,
+  onDeleteRecent,
+  isBookMode,
+  setIsBookMode,
+  isFullscreen,
+  setIsFullscreen
 }) {
   const [isContinuous, setIsContinuous] = useState(false);
   const singleCanvasRef = useRef(null);
+  const singleTextLayerRef = useRef(null);
   const singleRenderTaskRef = useRef(null);
 
-  // Single Page Mode: Render active page to canvas
+  // Sync HTML5 Fullscreen state change events
   useEffect(() => {
-    if (!pdfDoc || isContinuous) return;
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [setIsFullscreen]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error('Error entering fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  // Calculate pages for Book Mode (spread double pages)
+  const leftPage = currentPage % 2 !== 0 ? currentPage : currentPage - 1;
+  const rightPage = leftPage + 1;
+
+  // Single Page Mode: Render active page and text layer to canvas
+  useEffect(() => {
+    if (!pdfDoc || isContinuous || isBookMode) return;
 
     let active = true;
 
@@ -233,8 +291,26 @@ export default function PDFViewer({
 
         if (!isNormal || hasAdjustments || mode === 'original') {
           const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          applyThemeToImageData(imgData, selectedTheme, { mode, brightness, contrast });
+          applyThemeToImageData(imgData, selectedTheme, { 
+            mode, 
+            brightness, 
+            contrast,
+            customTheme
+          });
           ctx.putImageData(imgData, 0, 0);
+        }
+
+        // Render Text Layer in Single Page Mode
+        const textContent = await page.getTextContent();
+        const textLayerDiv = singleTextLayerRef.current;
+        if (textLayerDiv) {
+          textLayerDiv.innerHTML = '';
+          const textLayer = new pdfjsLib.TextLayer({
+            textContentSource: textContent,
+            container: textLayerDiv,
+            viewport: viewport
+          });
+          await textLayer.render();
         }
       } catch (err) {
         if (err.name !== 'RenderingCancelledException') {
@@ -251,7 +327,43 @@ export default function PDFViewer({
         singleRenderTaskRef.current.cancel();
       }
     };
-  }, [pdfDoc, currentPage, zoom, selectedTheme, mode, brightness, contrast, boldness, isContinuous]);
+  }, [pdfDoc, currentPage, zoom, selectedTheme, customTheme, mode, brightness, contrast, boldness, isContinuous, isBookMode]);
+
+  // Adjust pagination buttons for different viewing layouts
+  const handlePrevPage = () => {
+    if (isBookMode) {
+      setCurrentPage(prev => Math.max(1, prev - 2));
+    } else {
+      setCurrentPage(prev => Math.max(1, prev - 1));
+    }
+  };
+
+  const handleNextPage = () => {
+    if (isBookMode) {
+      setCurrentPage(prev => {
+        const isLeftOdd = prev % 2 !== 0;
+        const currentLeft = isLeftOdd ? prev : prev - 1;
+        return Math.min(numPages, currentLeft + 2);
+      });
+    } else {
+      setCurrentPage(prev => Math.min(numPages, prev + 1));
+    }
+  };
+
+  const getPageIndicatorText = () => {
+    if (isContinuous) return `All Pages (${numPages})`;
+    if (isBookMode) {
+      return rightPage <= numPages 
+        ? `Pages ${leftPage}-${rightPage} of ${numPages}` 
+        : `Page ${leftPage} of ${numPages}`;
+    }
+    return `Page ${currentPage} of ${numPages}`;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 KB';
+    return `${Math.round(bytes / 1024)} KB`;
+  };
 
   return (
     <main className="preview-container">
@@ -270,7 +382,7 @@ export default function PDFViewer({
           
           {pdfDoc ? (
             <span className="page-indicator">
-              {isContinuous ? `All Pages (${numPages})` : `Page ${currentPage} of ${numPages}`}
+              {getPageIndicatorText()}
             </span>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -285,30 +397,56 @@ export default function PDFViewer({
             {/* Toggle Scroll Mode */}
             <button 
               className={`toolbar-btn ${isContinuous ? 'active' : ''}`}
-              onClick={() => setIsContinuous(prev => !prev)}
+              onClick={() => {
+                setIsContinuous(prev => !prev);
+                setIsBookMode(false); // turn off conflicting book mode
+              }}
               title={isContinuous ? "Switch to Page Mode" : "Switch to Scroll Mode"}
               disabled={isProcessing}
             >
-              {isContinuous ? <BookOpen size={16} /> : <ScrollText size={16} />}
+              <ScrollText size={16} />
+            </button>
+
+            {/* Toggle Book Mode (Side by Side) */}
+            <button 
+              className={`toolbar-btn ${isBookMode ? 'active' : ''}`}
+              onClick={() => {
+                setIsBookMode(prev => !prev);
+                setIsContinuous(false); // turn off conflicting scroll mode
+              }}
+              title={isBookMode ? "Switch to Single Page" : "Switch to Book Spread Mode"}
+              disabled={isProcessing}
+            >
+              <BookOpen size={16} />
+            </button>
+
+            {/* Fullscreen toggle */}
+            <button 
+              className={`toolbar-btn ${isFullscreen ? 'active' : ''}`}
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen Mode"}
+              disabled={isProcessing}
+            >
+              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
             </button>
 
             <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
 
-            {/* Pagination Controls (disabled in continuous mode) */}
+            {/* Pagination Controls */}
             {!isContinuous && (
               <>
                 <button 
                   className="toolbar-btn" 
-                  disabled={currentPage <= 1 || isProcessing}
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={(isBookMode ? leftPage <= 1 : currentPage <= 1) || isProcessing}
+                  onClick={handlePrevPage}
                   title="Previous Page"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button 
                   className="toolbar-btn" 
-                  disabled={currentPage >= numPages || isProcessing}
-                  onClick={() => setCurrentPage(prev => Math.min(numPages, prev + 1))}
+                  disabled={(isBookMode ? rightPage >= numPages : currentPage >= numPages) || isProcessing}
+                  onClick={handleNextPage}
                   title="Next Page"
                 >
                   <ChevronRight size={18} />
@@ -338,11 +476,11 @@ export default function PDFViewer({
 
             <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
 
-            {/* Close / Remove PDF Button directly in Viewer */}
+            {/* Close PDF */}
             <button 
               className="toolbar-btn close-doc-btn" 
               onClick={clearFile}
-              title="Close PDF / Upload New"
+              title="Close PDF"
               disabled={isProcessing}
               style={{ color: '#ef4444' }}
             >
@@ -372,21 +510,117 @@ export default function PDFViewer({
                   pageNum={pageNo}
                   zoom={zoom}
                   selectedTheme={selectedTheme}
+                  customTheme={customTheme}
                   mode={mode}
                   brightness={brightness}
                   contrast={contrast}
                   boldness={boldness}
                 />
               ))
+            ) : isBookMode ? (
+              // Book Spread View (Side-by-side double canvases)
+              <div className="book-layout" style={{ display: 'flex', gap: '20px', justifyContent: 'center', width: '100%', padding: '10px' }}>
+                <PDFPageCanvas
+                  pdfDoc={pdfDoc}
+                  pageNum={leftPage}
+                  zoom={zoom}
+                  selectedTheme={selectedTheme}
+                  customTheme={customTheme}
+                  mode={mode}
+                  brightness={brightness}
+                  contrast={contrast}
+                  boldness={boldness}
+                />
+                {rightPage <= numPages && (
+                  <PDFPageCanvas
+                    pdfDoc={pdfDoc}
+                    pageNum={rightPage}
+                    zoom={zoom}
+                    selectedTheme={selectedTheme}
+                    customTheme={customTheme}
+                    mode={mode}
+                    brightness={brightness}
+                    contrast={contrast}
+                    boldness={boldness}
+                  />
+                )}
+              </div>
             ) : (
               // Single Page View
-              <div className="canvas-wrapper">
+              <div className="canvas-wrapper" style={{ position: 'relative' }}>
                 <canvas ref={singleCanvasRef} className="viewer-canvas" />
+                <div ref={singleTextLayerRef} className="textLayer" />
               </div>
             )}
           </div>
         ) : (
-          <UploadZone onFileSelected={onFileSelected} errorMsg={errorMsg} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', width: '100%' }}>
+            <UploadZone onFileSelected={onFileSelected} errorMsg={errorMsg} />
+
+            {/* Recent Files List Panel */}
+            {recentFiles && recentFiles.length > 0 && (
+              <div className="recent-files-section" style={{ width: '100%', maxWidth: '420px', textAlign: 'left' }}>
+                <h4 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)', marginBottom: '12px', fontWeight: 700 }}>
+                  Recent Documents
+                </h4>
+                <div className="recent-files-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {recentFiles.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="recent-file-card" 
+                      onClick={() => {
+                        const fileObj = new File([item.data], item.name, { type: 'application/pdf' });
+                        onFileSelected(fileObj, item.currentPage || 1);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px',
+                        background: 'var(--bg-sidebar)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s ease, border-color 0.2s'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '20px' }}>📄</span>
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.name}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            Page {item.currentPage || 1} of {item.totalPages} • {formatFileSize(item.size)}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={(e) => onDeleteRecent(item.id, e)}
+                        title="Remove from history"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '6px',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'color 0.2s, background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </main>

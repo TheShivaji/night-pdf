@@ -130,7 +130,7 @@ export function applyThemeToImageData(imageData, themeId, options = {}) {
   const data = imageData.data;
   const len = data.length;
   const mode = options.mode || 'smart'; // 'smart', 'duotone', or 'original'
-  const theme = THEME_PRESETS[themeId];
+  const theme = themeId === 'custom' ? options.customTheme : THEME_PRESETS[themeId];
 
   // Adjustments variables
   const brightness = options.brightness !== undefined ? parseInt(options.brightness) : 0;

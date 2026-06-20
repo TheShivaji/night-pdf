@@ -63,11 +63,18 @@ export async function convertPdfTheme(pdfDoc, themeId, options = {}, onProgress 
   const contrast = options.contrast || 0;
   const boldness = options.boldness || 0;
 
+  // Determine pages to convert based on custom range selection
+  const pagesToConvert = (options.pageRange && options.pageRange.length > 0)
+    ? options.pageRange
+    : Array.from({ length: numPages }, (_, i) => i + 1);
+  const totalToConvert = pagesToConvert.length;
+
   // Create a new PDF document using pdf-lib
   const newPdf = await PDFDocument.create();
 
-  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-    onProgress({ current: pageNum, total: numPages, status: 'processing' });
+  for (let idx = 0; idx < totalToConvert; idx++) {
+    const pageNum = pagesToConvert[idx];
+    onProgress({ current: idx + 1, total: totalToConvert, status: 'processing' });
 
     // 1. Get the PDF page
     const page = await pdfDoc.getPage(pageNum);
@@ -100,7 +107,12 @@ export async function convertPdfTheme(pdfDoc, themeId, options = {}, onProgress 
 
     if (!isNormal || hasAdjustments || mode === 'original') {
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      applyThemeToImageData(imgData, themeId, { mode, brightness, contrast });
+      applyThemeToImageData(imgData, themeId, { 
+        mode, 
+        brightness, 
+        contrast,
+        customTheme: options.customTheme 
+      });
       ctx.putImageData(imgData, 0, 0);
     }
 
@@ -126,9 +138,64 @@ export async function convertPdfTheme(pdfDoc, themeId, options = {}, onProgress 
     });
   }
 
-  onProgress({ current: numPages, total: numPages, status: 'saving' });
+  onProgress({ current: totalToConvert, total: totalToConvert, status: 'saving' });
   
   // Save PDF as Uint8Array bytes
   const pdfBytes = await newPdf.save();
   return pdfBytes;
+}
+
+/**
+ * Resolves outline destinations to page numbers recursively.
+ */
+async function resolveOutlineItem(pdfDoc, item) {
+  let pageNum = null;
+  try {
+    if (item.dest) {
+      let dest = item.dest;
+      if (typeof dest === 'string') {
+        dest = await pdfDoc.getDestination(item.dest);
+      }
+      if (dest && dest[0]) {
+        const pageIndex = await pdfDoc.getPageIndex(dest[0]);
+        pageNum = pageIndex + 1;
+      }
+    }
+  } catch (e) {
+    console.warn('Error resolving outline dest:', e);
+  }
+
+  const resolvedChildren = [];
+  if (item.items && item.items.length > 0) {
+    for (const child of item.items) {
+      resolvedChildren.push(await resolveOutlineItem(pdfDoc, child));
+    }
+  }
+
+  return {
+    title: item.title,
+    pageNum,
+    items: resolvedChildren
+  };
+}
+
+/**
+ * Gets the outline (TOC) tree of a PDF document with page numbers resolved.
+ * @param {pdfjsLib.PDFDocumentProxy} pdfDoc 
+ * @returns {Promise<Array>} resolved outline items
+ */
+export async function getPdfOutline(pdfDoc) {
+  try {
+    const rawOutline = await pdfDoc.getOutline();
+    if (!rawOutline) return [];
+    
+    const resolved = [];
+    for (const item of rawOutline) {
+      resolved.push(await resolveOutlineItem(pdfDoc, item));
+    }
+    return resolved;
+  } catch (e) {
+    console.error('Error fetching outline:', e);
+    return [];
+  }
 }
