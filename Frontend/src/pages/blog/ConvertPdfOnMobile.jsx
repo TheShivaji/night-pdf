@@ -1,13 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Clock, Calendar, ArrowLeft, Smartphone, Check, HelpCircle } from 'lucide-react';
+import { Clock, Calendar, ArrowLeft, Smartphone, CheckCircle, ChevronRight, BookOpen, Check } from 'lucide-react';
 
 export default function ConvertPdfOnMobile() {
   const publishDate = "June 5, 2026";
   const title = "How to Convert PDF to Dark Mode on Mobile: Android and iOS Guide";
   const description = "Want to read documents on your phone at night? Learn how to convert PDF to dark mode on mobile using browsers, dedicated apps, and Progressive Web Apps.";
   const canonicalUrl = "https://pdf.theshivaji.in/blog/convert-pdf-to-dark-mode-on-mobile";
+
+  const [scrollPercent, setScrollPercent] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY;
+      const totalScrollable = documentHeight - windowHeight;
+      if (totalScrollable > 0) {
+        setScrollPercent((scrollTop / totalScrollable) * 100);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -34,6 +50,14 @@ export default function ConvertPdfOnMobile() {
     }
   };
 
+  const tocItems = [
+    { id: "intro", label: "1. Mobile Reading Glare" },
+    { id: "ios", label: "2. iOS (iPhone & iPad) Guide" },
+    { id: "android", label: "3. Android Devices Guide" },
+    { id: "pwa", label: "4. The PWA Offline Solution" },
+    { id: "faq", label: "5. Frequently Asked Questions" }
+  ];
+
   return (
     <>
       <Helmet>
@@ -53,77 +77,108 @@ export default function ConvertPdfOnMobile() {
         </script>
       </Helmet>
 
-      <main className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-white/10 selection:text-white pb-20">
+      {/* Reading Progress Indicator */}
+      <div className="fixed top-20 left-0 w-full h-[2px] bg-zinc-950 z-50">
+        <div 
+          className="h-full bg-white transition-all duration-75" 
+          style={{ width: `${scrollPercent}%` }}
+        />
+      </div>
+
+      <main className="min-h-screen bg-black text-white font-sans selection:bg-white/10 selection:text-white pb-32">
+        
         {/* Hero Section */}
-        <section className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-zinc-900/50 to-zinc-950 px-6 py-20 sm:px-8">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
+        <section className="relative overflow-hidden px-6 pt-24 pb-16 sm:px-8 border-b border-white/5 bg-gradient-to-b from-zinc-950 via-black to-black">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/[0.01] rounded-full blur-3xl pointer-events-none" />
           
-          <div className="mx-auto max-w-4xl">
+          <div className="mx-auto max-w-4xl relative z-10">
             <Link to="/blog" className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors mb-8">
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Blog
             </Link>
             
-            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 mb-4">
-              <span className="rounded-full bg-rose-500/10 border border-rose-500/25 px-2.5 py-0.5 font-semibold text-rose-400">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 mb-5">
+              <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 font-semibold text-zinc-300">
                 PDF Tools
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" /> {publishDate}
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" /> 7 min read
               </span>
             </div>
 
             <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl text-white leading-tight font-display">
-              Convert PDF to Dark Mode on Mobile Devices
+              Convert PDF to Dark Mode on Mobile
             </h1>
-            <p className="mt-6 text-lg text-zinc-400 leading-relaxed max-w-3xl">
+            <p className="mt-8 text-lg sm:text-xl text-zinc-400 font-light leading-relaxed">
               Reading bright PDF documents on mobile screens late at night causes quick eye fatigue and sleep disruptions. Learn how to convert PDFs on iOS and Android devices using native apps and offline PWAs.
             </p>
           </div>
         </section>
 
-        {/* Content Section */}
-        <div className="mx-auto max-w-6xl px-6 py-12 flex flex-col lg:flex-row gap-12">
+        {/* Article Layout Container */}
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 py-16 flex gap-16 relative">
           
-          {/* Main content column */}
-          <article className="flex-1 prose prose-invert max-w-none text-zinc-300 space-y-8 text-sm sm:text-base leading-relaxed">
+          {/* Sticky Left Table of Contents */}
+          <aside className="hidden lg:block w-64 shrink-0">
+            <div className="sticky top-32 p-6 rounded-2xl border border-white/5 bg-zinc-950">
+              <h3 className="font-display font-bold text-xs uppercase tracking-wider text-zinc-400 mb-5">
+                On this page
+              </h3>
+              <nav className="space-y-3.5">
+                {tocItems.map((item) => (
+                  <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    className="block text-xs text-zinc-500 hover:text-white transition-colors font-medium"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          {/* Reading Core Column */}
+          <div className="flex-1 max-w-[800px] space-y-12">
             
-            <p>
-              Smartphones and tablets have become our primary reading devices for ebooks, academic studies, and business memos. However, reading PDFs on a mobile device presents unique challenges. Because mobile screens are physically closer to our eyes than desktop monitors, their luminous output and blue light concentration feel significantly more intense.
-            </p>
-            <p>
-              Additionally, many standard mobile PDF viewers lack simple dark mode settings, displaying documents with bright white backgrounds that strain your eyes in bed. This guide walks you through the best methods to **convert PDF to dark mode on mobile** using iOS and Android options.
-            </p>
+            <section id="intro" className="scroll-mt-32 space-y-5">
+              <p className="text-zinc-300 leading-relaxed font-light">
+                Smartphones and tablets have become our primary reading devices for ebooks, academic studies, and business memos. However, reading PDFs on a mobile device presents unique challenges. Because mobile screens are physically closer to our eyes than desktop monitors, their luminous output and blue light concentration feel significantly more intense.
+              </p>
+              <p className="text-zinc-300 leading-relaxed font-light">
+                Additionally, many standard mobile PDF viewers lack simple dark mode settings, displaying documents with bright white backgrounds that strain your eyes in bed. This guide walks you through the best methods to convert PDF to dark mode on mobile using iOS and Android options.
+              </p>
+            </section>
 
             {/* iOS Guide */}
-            <section className="space-y-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-white font-display border-b border-white/5 pb-2">
-                1. How to Convert PDFs to Dark Mode on iOS (iPhone & iPad)
+            <section id="ios" className="scroll-mt-32 space-y-5">
+              <h2 className="font-display text-2xl font-bold text-white border-b border-white/5 pb-2.5">
+                2. How to Convert PDFs to Dark Mode on iOS (iPhone & iPad)
               </h2>
-              <p>
+              <p className="text-zinc-300 leading-relaxed font-light">
                 Apple devices feature excellent accessibility toggles, though they are often buried in settings.
               </p>
               
-              <div className="rounded-xl border border-white/5 bg-zinc-900/30 p-5 space-y-3">
-                <h4 className="font-semibold text-white text-sm">Method A: iOS Smart Invert</h4>
-                <p className="text-xs text-zinc-400">
+              <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6 space-y-3">
+                <h4 className="font-display font-bold text-white text-sm">Method A: iOS Smart Invert</h4>
+                <p className="text-xs text-zinc-400 font-light">
                   This system-wide tool reverses display colors while leaving images and media in their original format.
                 </p>
-                <ol className="list-decimal pl-5 text-xs text-zinc-400 space-y-1">
+                <ol className="list-decimal pl-5 text-xs text-zinc-400 font-light space-y-1">
                   <li>Open <strong>Settings</strong> &gt; <strong>Accessibility</strong> &gt; <strong>Display & Text Size</strong>.</li>
                   <li>Toggle on <strong>Smart Invert</strong>.</li>
                   <li>Open your PDF in Apple Books or Safari. Your page backgrounds will invert to black.</li>
                 </ol>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-zinc-900/30 p-5 space-y-3">
-                <h4 className="font-semibold text-white text-sm">Method B: Adobe Acrobat Mobile App</h4>
-                <p className="text-xs text-zinc-400">
+              <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6 space-y-3">
+                <h4 className="font-display font-bold text-white text-sm">Method B: Adobe Acrobat Mobile App</h4>
+                <p className="text-xs text-zinc-400 font-light">
                   Adobe's free iOS app features a dedicated liquid layout and view settings.
                 </p>
-                <ol className="list-decimal pl-5 text-xs text-zinc-400 space-y-1">
+                <ol className="list-decimal pl-5 text-xs text-zinc-400 font-light space-y-1">
                   <li>Download Adobe Acrobat from the App Store and open your PDF.</li>
                   <li>Tap the **View Settings** (page layout icon) on the top toolbar.</li>
                   <li>Toggle on **Night Mode**. The document background will switch to dark gray.</li>
@@ -132,130 +187,145 @@ export default function ConvertPdfOnMobile() {
             </section>
 
             {/* Android Guide */}
-            <section className="space-y-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-white font-display border-b border-white/5 pb-2">
-                2. How to Convert PDFs to Dark Mode on Android
+            <section id="android" className="scroll-mt-32 space-y-5">
+              <h2 className="font-display text-2xl font-bold text-white border-b border-white/5 pb-2.5">
+                3. How to Convert PDFs to Dark Mode on Android
               </h2>
-              <p>
+              <p className="text-zinc-300 leading-relaxed font-light">
                 Android offers several ways to view PDFs in dark themes depending on your brand (Samsung, Pixel, Xiaomi, etc.) and software suite.
               </p>
               
-              <div className="rounded-xl border border-white/5 bg-zinc-900/30 p-5 space-y-3">
-                <h4 className="font-semibold text-white text-sm">Method A: Samsung Notes (Samsung Devices)</h4>
-                <p className="text-xs text-zinc-400">
+              <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6 space-y-3">
+                <h4 className="font-display font-bold text-white text-sm">Method A: Samsung Notes (Samsung Devices)</h4>
+                <p className="text-xs text-zinc-400 font-light">
                   Samsung Notes is one of the best PDF readers on Android for annotations and night reading.
                 </p>
-                <ol className="list-decimal pl-5 text-xs text-zinc-400 space-y-1">
+                <ol className="list-decimal pl-5 text-xs text-zinc-400 font-light space-y-1">
                   <li>Import your PDF file into Samsung Notes.</li>
                   <li>Tap the three-dot menu icon and select <strong>Page Template</strong>.</li>
-                  <li>Choose a dark template or enable the system-wide Dark Mode. Samsung Notes will automatically darken the document background while keeping colored pen strokes legible.</li>
+                  <li>Choose a dark template or enable the system-wide Dark Mode. Samsung Notes will automatically darken the document background.</li>
                 </ol>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-zinc-900/30 p-5 space-y-3">
-                <h4 className="font-semibold text-white text-sm">Method B: Android Developer Settings (Force Dark Mode)</h4>
-                <p className="text-xs text-zinc-400">
+              <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6 space-y-3">
+                <h4 className="font-display font-bold text-white text-sm">Method B: Android Developer Settings (Force Dark Mode)</h4>
+                <p className="text-xs text-zinc-400 font-light">
                   You can force all apps on Android (including basic PDF readers) to render in dark mode.
                 </p>
-                <ol className="list-decimal pl-5 text-xs text-zinc-400 space-y-1">
-                  <li>Go to <strong>Settings</strong> &gt; <strong>About Phone</strong> and tap <strong>Build Number</strong> seven times to enable Developer Options.</li>
-                  <li>Go back to settings, open <strong>Developer Options</strong>, and search for <strong>Force Dark Mode</strong> (or Override Force-Dark).</li>
+                <ol className="list-decimal pl-5 text-xs text-zinc-400 font-light space-y-1">
+                  <li>Go to <strong>Settings</strong> &gt; <strong>About Phone</strong> and tap <strong>Build Number</strong> seven times.</li>
+                  <li>Go back to settings, open <strong>Developer Options</strong>, and search for <strong>Force Dark Mode</strong>.</li>
                   <li>Toggle this setting on. Your default PDF readers will now show inverted white backgrounds.</li>
                 </ol>
               </div>
             </section>
 
             {/* PWA Advantage */}
-            <section className="space-y-3">
-              <h2 className="text-xl sm:text-2xl font-bold text-white font-display border-b border-white/5 pb-2">
-                3. The PWA Advantage: Local Offline Reading
+            <section id="pwa" className="scroll-mt-32 space-y-5">
+              <h2 className="font-display text-2xl font-bold text-white border-b border-white/5 pb-2.5">
+                4. The PWA Advantage: Local Offline Reading
               </h2>
-              <p>
+              <p className="text-zinc-300 leading-relaxed font-light">
                 Struggling with menu trees and heavy application sizes? You can use **Night PDF** as a Progressive Web App (PWA) on your phone.
               </p>
-              <p>
+              <p className="text-zinc-300 leading-relaxed font-light">
                 Simply visit <a href="https://pdf.theshivaji.in" className="text-white underline">pdf.theshivaji.in</a> in Safari or Chrome on your phone. Tap the share sheet on iOS and select "Add to Home Screen", or click the "Install App" button in Chrome for Android. Once installed, it runs as a standalone app with no address bar, letting you read PDFs offline in AMOLED Black, Sepia, or custom themes.
               </p>
-              <p>
-                To learn more about optimizing screen parameters for night reading, visit our guide on <Link to="/blog/how-to-read-pdf-at-night" className="text-white underline hover:text-zinc-300">how to read PDFs at night without eye strain</Link>.
+              <p className="text-zinc-300 leading-relaxed font-light">
+                To learn more about optimizing screen parameters for night reading, visit our guide on <Link to="/blog/how-to-read-pdf-at-night" className="text-white underline hover:text-zinc-200">how to read PDFs at night without eye strain</Link>.
               </p>
             </section>
 
             {/* FAQ Section */}
-            <section className="space-y-6 pt-6 border-t border-white/5">
-              <h2 className="text-xl sm:text-2xl font-bold text-white font-display">
+            <section id="faq" className="scroll-mt-32 space-y-6 pt-10 border-t border-white/5">
+              <h2 className="font-display text-2xl font-bold text-white">
                 Frequently Asked Questions
               </h2>
               
               <div className="space-y-4">
-                <div className="rounded-xl border border-white/5 bg-zinc-900/10 p-5">
-                  <h4 className="font-semibold text-white mb-2">Does mobile dark mode save battery?</h4>
-                  <p className="text-sm text-zinc-400">
+                <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6">
+                  <h4 className="font-display font-bold text-white text-sm mb-2">Does mobile dark mode save battery?</h4>
+                  <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed">
                     Yes, on devices with OLED, AMOLED, or Super Retina screens (including most iPhones and premium Android phones). Because black pixels turn off completely, you save substantial battery compared to LCD screens.
                   </p>
                 </div>
                 
-                <div className="rounded-xl border border-white/5 bg-zinc-900/10 p-5">
-                  <h4 className="font-semibold text-white mb-2">Can I open local files inside a PWA when offline?</h4>
-                  <p className="text-sm text-zinc-400">
+                <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6">
+                  <h4 className="font-display font-bold text-white text-sm mb-2">Can I open local files inside a PWA when offline?</h4>
+                  <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed">
                     Yes. PWAs cache their assets locally, meaning the application logic is loaded from your device. When you select a PDF file, your browser reads it directly from your local filesystem—no internet connection is required.
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-white/5 bg-zinc-900/10 p-5">
-                  <h4 className="font-semibold text-white mb-2">Why are my textbook colors distorted when using Smart Invert?</h4>
-                  <p className="text-sm text-zinc-400">
+                <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6">
+                  <h4 className="font-display font-bold text-white text-sm mb-2">Why are my textbook colors distorted when using Smart Invert?</h4>
+                  <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed">
                     Smart Invert attempts to detect and preserve image media, but it can fail on complex vector graphics and tables. To maintain diagram color accuracy, use readers like Night PDF that apply selective lightness shifts instead of blanket color inversion.
                   </p>
                 </div>
               </div>
             </section>
 
-            {/* CTA Section */}
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 p-8 text-center mt-12 relative overflow-hidden">
-              <div className="absolute -right-16 -top-16 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-              <h3 className="font-display text-xl font-bold text-white">
-                Read Eye-Friendly PDFs on the Go
+            {/* Related Articles Section */}
+            <section className="pt-10 border-t border-white/5 space-y-6">
+              <h3 className="font-display font-bold text-sm uppercase tracking-wider text-zinc-500">Related Articles</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Link 
+                  to="/blog/best-pdf-dark-mode-tools" 
+                  className="group rounded-2xl border border-white/5 bg-zinc-950 p-6 hover:border-white/10 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">PDF Tools</span>
+                    <h4 className="font-display font-bold text-white text-sm mt-1 group-hover:text-zinc-300 transition-colors">Best PDF Dark Mode Tools</h4>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white mt-4">
+                    Read Article <ChevronRight className="w-3 h-3" />
+                  </span>
+                </Link>
+                <Link 
+                  to="/blog/amoled-vs-sepia" 
+                  className="group rounded-2xl border border-white/5 bg-zinc-950 p-6 hover:border-white/10 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Display Tech</span>
+                    <h4 className="font-display font-bold text-white text-sm mt-1 group-hover:text-zinc-300 transition-colors">AMOLED vs Sepia Mode</h4>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white mt-4">
+                    Read Article <ChevronRight className="w-3 h-3" />
+                  </span>
+                </Link>
+              </div>
+            </section>
+
+            {/* CTA Block After Article */}
+            <div className="rounded-3xl border border-white/5 bg-gradient-to-b from-zinc-900/50 to-black p-10 sm:p-12 text-center relative overflow-hidden">
+              <div className="absolute -right-24 -top-24 w-48 h-48 bg-white/[0.01] rounded-full blur-3xl pointer-events-none" />
+              <h3 className="font-display text-2xl font-bold text-white tracking-tight">
+                Ready to Read PDFs Without Eye Strain?
               </h3>
-              <p className="mt-2 text-xs text-zinc-400 max-w-md mx-auto">
-                No downloads or app store installs needed. Run our offline-first PWA reader on your phone and convert your PDFs in seconds.
-              </p>
-              <div className="mt-6">
+              <div className="mt-6 flex flex-wrap justify-center gap-4 text-xs text-zinc-400">
+                <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                  <Check className="w-3.5 h-3.5 text-white" /> 100% Private
+                </span>
+                <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                  <Check className="w-3.5 h-3.5 text-white" /> Dark Mode
+                </span>
+                <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                  <Check className="w-3.5 h-3.5 text-white" /> Works Offline
+                </span>
+              </div>
+              <div className="mt-8 flex justify-center">
                 <Link
                   to="/"
-                  className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 text-xs font-bold text-black transition-all hover:bg-zinc-200"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-7 py-3.5 text-xs font-bold text-black hover:bg-zinc-200 transition-all active:scale-98"
                 >
-                  Open PDF Reader
+                  Open Night PDF
                 </Link>
               </div>
             </div>
 
-          </article>
+          </div>
           
-          {/* Sidebar */}
-          <aside className="w-full lg:w-72 shrink-0 space-y-6">
-            <div className="sticky top-24 rounded-xl border border-white/5 bg-zinc-900/20 p-6">
-              <h3 className="font-semibold text-white text-sm mb-4">Related Guides</h3>
-              <ul className="space-y-3 text-xs">
-                <li>
-                  <Link to="/blog/best-pdf-dark-mode-tools" className="text-zinc-400 hover:text-white transition-colors block">
-                    ➔ Review of Best Dark PDF Tools
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/blog/amoled-vs-sepia" className="text-zinc-400 hover:text-white transition-colors block">
-                    ➔ AMOLED vs Sepia Comfort Guide
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/faq" className="text-zinc-400 hover:text-white transition-colors block">
-                    ➔ Reader Workspace General FAQ
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </aside>
-
         </div>
       </main>
     </>

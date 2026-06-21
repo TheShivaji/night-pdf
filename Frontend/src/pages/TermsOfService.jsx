@@ -1,9 +1,23 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { FileText, CheckCircle2, AlertTriangle, HelpCircle } from 'lucide-react';
+import { FileText, CheckCircle2, AlertTriangle, Scale, ShieldCheck, HelpCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function TermsOfService() {
   const lastUpdated = "June 21, 2026";
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+  };
 
   return (
     <>
@@ -34,130 +48,151 @@ export default function TermsOfService() {
         </script>
       </Helmet>
 
-      <main className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-white/10 selection:text-white pb-20">
-        {/* Hero Banner */}
-        <section className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-zinc-900/50 to-zinc-950 px-6 py-16 text-center sm:px-8">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-zinc-800/10 rounded-full blur-3xl pointer-events-none" />
+      <main className="min-h-screen bg-black text-white font-sans selection:bg-white/10 selection:text-white pb-32">
+        
+        {/* Hero Section */}
+        <section className="relative overflow-hidden px-6 pt-24 pb-16 text-center sm:px-8">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/[0.01] rounded-full blur-3xl pointer-events-none" />
           
-          <div className="relative mx-auto max-w-3xl">
-            <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative mx-auto max-w-3xl"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 border border-white/10 px-3.5 py-1.5 text-xs font-semibold text-zinc-300 mb-8 shadow-sm">
+              <Scale className="w-3 h-3 text-zinc-400" /> Terms & Framework
+            </span>
+            <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
               Terms of Service
             </h1>
-            <p className="mt-4 text-sm text-zinc-500">
+            <p className="mt-4 text-xs text-zinc-500">
               Last Updated: {lastUpdated}
             </p>
-            <p className="mt-6 text-base text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Please read these terms carefully. They establish the operational context and disclaimers for using our 100% browser-based PDF utility.
+            <p className="mt-8 text-base sm:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed font-light">
+              Please read these terms carefully. They establish the operational context, legal responsibilities, and disclaimers for using our local PDF utility.
             </p>
-          </div>
+          </motion.div>
         </section>
 
-        {/* Overview cards */}
-        <section className="mx-auto max-w-4xl px-6 py-10">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex items-start gap-4 rounded-xl border border-white/5 bg-zinc-900/20 p-5">
-              <div className="rounded-lg bg-white/5 p-2 text-white border border-white/10 shrink-0">
+        {/* Info Cards Section */}
+        <section className="mx-auto max-w-7xl px-6 sm:px-8 py-12">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 gap-6 sm:grid-cols-3"
+          >
+            <motion.div 
+              variants={itemVariants}
+              className="group relative rounded-3xl border border-white/5 bg-zinc-950 p-8 hover:border-white/15 transition-all duration-300"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 text-white mb-6 group-hover:scale-105 transition-transform duration-300">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="font-semibold text-white text-sm">Acceptable Use</h3>
-                <p className="mt-1 text-xs text-zinc-400 leading-normal">
-                  Users retain absolute rights over their PDF files. You are responsible for ensuring your files do not violate third-party copyright laws.
-                </p>
+              <h3 className="font-display font-bold text-white text-lg">Acceptable Content</h3>
+              <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-light">
+                You retain complete responsibility for any files processed in the reader. Ensure you hold valid copyrights or permissions to transform and read loaded PDF documents.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              variants={itemVariants}
+              className="group relative rounded-3xl border border-white/5 bg-zinc-950 p-8 hover:border-white/15 transition-all duration-300"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 text-white mb-6 group-hover:scale-105 transition-transform duration-300">
+                <ShieldCheck className="w-5 h-5" />
               </div>
-            </div>
-            <div className="flex items-start gap-4 rounded-xl border border-white/5 bg-zinc-900/20 p-5">
-              <div className="rounded-lg bg-white/5 p-2 text-white border border-white/10 shrink-0">
+              <h3 className="font-display font-bold text-white text-lg">Local Sandbox</h3>
+              <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-light">
+                All functions operate on client-side JS runtime. The maintainers do not manage cloud logs or host PDF databases, protecting your documents from server intercepts.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              variants={itemVariants}
+              className="group relative rounded-3xl border border-white/5 bg-zinc-950 p-8 hover:border-white/15 transition-all duration-300"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 text-white mb-6 group-hover:scale-105 transition-transform duration-300">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="font-semibold text-white text-sm">No Warranty Disclaimer</h3>
-                <p className="mt-1 text-xs text-zinc-400 leading-normal">
-                  Night PDF is provided "as is" and "as available". We do not guarantee error-free HSL inversion for every document format.
-                </p>
-              </div>
-            </div>
-          </div>
+              <h3 className="font-display font-bold text-white text-lg">No Warranty</h3>
+              <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-light">
+                Night PDF is provided "as is" without warranty of any kind. We do not guarantee error-free rendering or color inversion compatibility for all PDF encodings.
+              </p>
+            </motion.div>
+          </motion.div>
         </section>
 
-        {/* Content Body */}
-        <section className="mx-auto max-w-3xl px-6 mt-6">
-          <div className="prose prose-invert max-w-none space-y-8 text-zinc-300 text-sm leading-relaxed">
-            
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">1. Acceptance of Terms</h2>
-              <p>
-                By accessing, downloading, or using the Night PDF application (available at{" "}
-                <a href="https://pdf.theshivaji.in" className="text-white underline hover:text-zinc-300">
-                  pdf.theshivaji.in
-                </a>
-                ), you agree to comply with and be bound by these Terms of Service. If you do not agree, you must immediately terminate use of the service.
-              </p>
-            </div>
+        {/* Legal Sections in Modern Containers */}
+        <section className="mx-auto max-w-4xl px-6 space-y-6">
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border border-white/5 bg-zinc-950 p-8 sm:p-12 space-y-4"
+          >
+            <h2 className="font-display text-lg font-bold text-white">1. Acceptance of Terms</h2>
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-light">
+              By accessing, loading files into, or using the Night PDF web application (available at `https://pdf.theshivaji.in`), you agree to comply with and be bound by these Terms of Service. If you do not accept these parameters, you must cease using the utility.
+            </p>
+          </motion.div>
 
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">2. Description of Service</h2>
-              <p>
-                Night PDF is a client-side utility program that helps users read documents in dark-mode themes. The application operates entirely locally inside the user's browser environment. The software allows reading, inverting document canvas matrices, and exporting (downloading) modified PDF files. Because of this client-only workflow, we do not provide server-side file hosting, sharing, or synchronization databases.
-              </p>
-            </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border border-white/5 bg-zinc-950 p-8 sm:p-12 space-y-4"
+          >
+            <h2 className="font-display text-lg font-bold text-white">2. Scope of Service</h2>
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-light">
+              Night PDF operates as a client-side reader. It renders, processes, and shifts PDF pixel maps locally using browser canvas parameters. Because all processing is client-only, we do not host, store, share, or sync your document files.
+            </p>
+          </motion.div>
 
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">3. User Responsibility & Acceptable Use</h2>
-              <p>
-                You represent and warrant that you hold all necessary copyrights, licenses, or permissions to read, transform, or modify any PDF files you load into the tool. You shall not load any documents containing:
-              </p>
-              <ul className="list-disc pl-5 mt-2 space-y-2">
-                <li>Viruses, Trojans, or malicious code designed to disrupt client-side JS runtime.</li>
-                <li>Content that violates copyright laws or licenses that explicitly prohibit color shifting or format modifications.</li>
-              </ul>
-            </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border border-white/5 bg-zinc-950 p-8 sm:p-12 space-y-4"
+          >
+            <h2 className="font-display text-lg font-bold text-white">3. User Commitments</h2>
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-light">
+              You warrant that you hold all necessary licenses and copyrights to modify the visual properties of any documents you import. You shall not input files intended to disrupt client-side JS runtime or load files that violate copyrights or licensing terms.
+            </p>
+          </motion.div>
 
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">4. Intellectual Property</h2>
-              <ul className="list-disc pl-5 space-y-2">
-                <li>
-                  <strong>Night PDF Codebase:</strong> The structure, code logic, styling systems, and logos are the property of the project creator, unless open-sourced or licensed under standard MIT parameters.
-                </li>
-                <li>
-                  <strong>Your Documents:</strong> We do not assert any intellectual property ownership or claims over the PDFs you load. You retain 100% ownership, control, and intellectual rights over your files.
-                </li>
-              </ul>
-            </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border border-white/5 bg-zinc-950 p-8 sm:p-12 space-y-4"
+          >
+            <h2 className="font-display text-lg font-bold text-white">4. Intellectual Property</h2>
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-light">
+              The layout, styling design system, codebase, and brand assets of Night PDF remain the property of the project maintainer, unless open-sourced or licensed under MIT parameters. We claim no ownership over the contents of files you read or transform.
+            </p>
+          </motion.div>
 
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">5. Disclaimer of Warranties</h2>
-              <div className="rounded-lg border border-white/10 bg-zinc-900/50 p-4 flex gap-3 text-zinc-400 text-xs">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-                <div>
-                  THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT ANY EXPRESS OR IMPLIED WARRANTY OF ANY KIND. THE MAINTAINERS OF NIGHT PDF DISCLAIM ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NONINFRINGEMENT. WE DO NOT GUARANTEE THAT THE APPLICATION WILL CORRECTLY PROCESS OR RENDER ALL PDF ENCODINGS, FONTS, OR IMAGE MAPPINGS.
-                </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border border-white/5 bg-zinc-950 p-8 sm:p-12 space-y-4"
+          >
+            <h2 className="font-display text-lg font-bold text-white">5. Disclaimers & Liability Limits</h2>
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5 flex gap-4 text-xs text-zinc-400">
+              <AlertTriangle className="w-5 h-5 text-zinc-400 shrink-0" />
+              <div className="leading-relaxed">
+                <strong>Disclaimer of Warranties:</strong> THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE MAINTAINERS BE LIABLE FOR ANY DAMAGES WHATSOEVER (INCLUDING LOSS OF DATA, FILE CORRUPTION, OR BUSINESS INTERRUPTION) ARISING OUT OF THE USE OF OR INABILITY TO USE THIS APPLICATION.
               </div>
             </div>
+          </motion.div>
 
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">6. Limitation of Liability</h2>
-              <p>
-                IN NO EVENT SHALL THE MAINTAINERS OR CONTRIBUTORS OF NIGHT PDF BE LIABLE FOR ANY DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF DATA, PROFITS, FILE CORRUPTION, OR BUSINESS INTERRUPTION) ARISING OUT OF THE USE OF OR INABILITY TO USE THIS APPLICATION, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. ALL DATA STORAGE AND PROCESSING RISKS ARE SOLELY BORNE BY THE USER.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">7. Modifications to the Service and Terms</h2>
-              <p>
-                We reserve the right to modify, pause, or terminate the application or update these Terms of Service at any time without notice. Continued use of the website following changes indicates your binding acceptance of the updated terms.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">8. Governing Law</h2>
-              <p>
-                These terms are governed by and construed in accordance with the laws of the jurisdiction of the maintainer, without giving effect to any principles of conflicts of law.
-              </p>
-            </div>
-
-          </div>
         </section>
+
       </main>
     </>
   );

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ChevronDown, Shield, Cpu, HelpCircle, FileText, Smartphone } from 'lucide-react';
+import { ChevronDown, Shield, Cpu, HelpCircle, ArrowRight, Eye, CloudOff, Sparkles, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const faqs = [
   {
@@ -66,6 +67,20 @@ export default function FAQPage() {
     }))
   };
 
+  // Animation constants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+  };
+
   return (
     <>
       <Helmet>
@@ -85,126 +100,195 @@ export default function FAQPage() {
         </script>
       </Helmet>
 
-      <main className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-white/10 selection:text-white pb-20">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-zinc-900/50 to-zinc-950 px-6 py-20 text-center sm:px-8">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-zinc-800/10 rounded-full blur-3xl pointer-events-none" />
+      <main className="min-h-screen bg-black text-white font-sans selection:bg-white/10 selection:text-white pb-32">
+        
+        {/* Premium Hero Section */}
+        <section className="relative overflow-hidden px-6 pt-24 pb-20 text-center sm:px-8">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/[0.01] rounded-full blur-3xl pointer-events-none" />
           
-          <div className="relative mx-auto max-w-3xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300 mb-6">
-              <HelpCircle className="w-3.5 h-3.5" /> Help Center
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative mx-auto max-w-3xl"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 border border-white/10 px-3.5 py-1.5 text-xs font-semibold text-zinc-300 mb-8 shadow-sm">
+              <Sparkles className="w-3 h-3 text-zinc-400" /> Help Center
             </span>
-            <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+            <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
               Frequently Asked Questions
             </h1>
-            <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Have questions about how Night PDF works, privacy safety, or offline features? Find clear, direct answers below.
+            <p className="mt-8 text-base sm:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed font-light">
+              Everything you need to know about our privacy-first processing, offline capabilities, and custom reading themes.
             </p>
-          </div>
+            
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3.5 text-xs font-bold text-black transition-all hover:bg-zinc-200 active:scale-98 shadow-md"
+              >
+                Open PDF Reader
+              </Link>
+              <Link
+                to="/blog"
+                className="inline-flex items-center justify-center rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/10 px-6 py-3.5 text-xs font-bold text-zinc-300 transition-all active:scale-98"
+              >
+                Explore Blog
+              </Link>
+            </div>
+          </motion.div>
         </section>
 
-        {/* Highlight Badges */}
-        <section className="mx-auto max-w-5xl px-6 py-10">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="flex items-start gap-4 rounded-xl border border-white/5 bg-zinc-900/20 p-5 backdrop-blur-sm">
-              <div className="rounded-lg bg-white/5 p-2 text-white border border-white/10">
+        {/* Three Premium Feature Cards */}
+        <section className="mx-auto max-w-7xl px-6 sm:px-8 py-12">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 gap-6 sm:grid-cols-3"
+          >
+            <motion.div 
+              variants={itemVariants}
+              className="group relative rounded-3xl border border-white/5 bg-zinc-950 p-8 hover:border-white/15 transition-all duration-300"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 text-white mb-6 group-hover:scale-105 transition-transform duration-300">
                 <Shield className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="font-semibold text-white text-sm">100% Privacy First</h3>
-                <p className="mt-1 text-xs text-zinc-400 leading-normal">
-                  All PDF rendering and inversion occurs entirely locally in your web browser. Zero server uploads.
-                </p>
+              <h3 className="font-display font-bold text-white text-lg">100% Private</h3>
+              <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-light">
+                All document parsing, inversion rendering, and storage calculations occur entirely in your local RAM browser sandbox. No servers, no tracking, complete peace of mind.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              variants={itemVariants}
+              className="group relative rounded-3xl border border-white/5 bg-zinc-950 p-8 hover:border-white/15 transition-all duration-300"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 text-white mb-6 group-hover:scale-105 transition-transform duration-300">
+                <CloudOff className="w-5 h-5" />
               </div>
-            </div>
-            <div className="flex items-start gap-4 rounded-xl border border-white/5 bg-zinc-900/20 p-5 backdrop-blur-sm">
-              <div className="rounded-lg bg-white/5 p-2 text-white border border-white/10">
+              <h3 className="font-display font-bold text-white text-lg">Works Offline</h3>
+              <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-light">
+                Built as a modern PWA utility. Save it directly to your mobile home screen or bookmark it. The tool runs seamlessly in airplane mode or deep off-grid locations.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              variants={itemVariants}
+              className="group relative rounded-3xl border border-white/5 bg-zinc-950 p-8 hover:border-white/15 transition-all duration-300"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 text-white mb-6 group-hover:scale-105 transition-transform duration-300">
                 <Cpu className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="font-semibold text-white text-sm">GPU Accelerated Inversion</h3>
-                <p className="mt-1 text-xs text-zinc-400 leading-normal">
-                  Utilizes HTML5 canvas processing for crisp rendering and immediate HSL contrast adjustments.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 rounded-xl border border-white/5 bg-zinc-900/20 p-5 backdrop-blur-sm">
-              <div className="rounded-lg bg-white/5 p-2 text-white border border-white/10">
-                <Smartphone className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white text-sm">Fully Offline Capable</h3>
-                <p className="mt-1 text-xs text-zinc-400 leading-normal">
-                  Install as a Progressive Web App (PWA) and read or convert your PDFs without any internet.
-                </p>
-              </div>
-            </div>
-          </div>
+              <h3 className="font-display font-bold text-white text-lg">Smart Dark Mode</h3>
+              <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-light">
+                Advanced lightness shifting preserves original hues for textbook charts and diagrams, avoiding raw visual negatives while turning bright pages eye-friendly.
+              </p>
+            </motion.div>
+          </motion.div>
         </section>
 
-        {/* Accordion list */}
-        <section className="mx-auto max-w-3xl px-6 mt-6">
+        {/* Modern Accordion Section */}
+        <section className="mx-auto max-w-3xl px-6 py-20">
+          <motion.h2 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="font-display text-2xl font-bold text-zinc-200 mb-12 text-center"
+          >
+            Frequently Asked Questions
+          </motion.h2>
+
           <div className="space-y-4">
             {faqs.map((faq, index) => {
               const isOpen = openIndex === index;
               return (
-                <div 
+                <motion.div 
                   key={index} 
-                  className={`group rounded-xl border transition-all duration-300 ${
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4 }}
+                  className={`group rounded-2xl border transition-all duration-300 ${
                     isOpen 
-                      ? 'border-white/20 bg-zinc-900/40 shadow-lg shadow-white/[0.02]' 
-                      : 'border-white/5 bg-zinc-900/10 hover:border-white/15'
+                      ? 'border-white/15 bg-zinc-950/80 shadow-2xl' 
+                      : 'border-white/5 bg-zinc-950/20 hover:border-white/10'
                   }`}
                 >
                   <button
                     onClick={() => toggleAccordion(index)}
-                    className="flex w-full items-center justify-between px-6 py-5 text-left focus:outline-none"
+                    className="flex w-full items-center justify-between px-7 py-5 text-left focus:outline-none"
                     aria-expanded={isOpen}
                   >
-                    <span className="font-display text-base font-semibold text-zinc-100 group-hover:text-white transition-colors">
+                    <span className="font-display text-sm sm:text-base font-semibold text-zinc-200 group-hover:text-white transition-colors">
                       {faq.question}
                     </span>
-                    <span className={`ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/5 border border-white/10 text-zinc-400 group-hover:text-zinc-200 transition-all duration-300 ${isOpen ? 'rotate-180 bg-white/10 border-white/20 text-white' : ''}`}>
-                      <ChevronDown className="w-4 h-4" />
+                    <span className={`ml-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/5 border border-white/10 text-zinc-400 group-hover:text-zinc-200 transition-all duration-300 ${isOpen ? 'rotate-180 bg-white/10 border-white/20 text-white' : ''}`}>
+                      <ChevronDown className="w-3.5 h-3.5" />
                     </span>
                   </button>
 
-                  <div 
-                    className={`grid transition-all duration-300 ease-in-out ${
-                      isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
-                    }`}
-                  >
-                    <div className="overflow-hidden">
-                      <div className="px-6 pb-6 text-sm leading-relaxed text-zinc-400 border-t border-white/5 pt-4">
-                        {faq.answer}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-7 pb-6 text-sm leading-relaxed text-zinc-400 border-t border-white/5 pt-4 font-light">
+                          {faq.answer}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               );
             })}
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="mx-auto max-w-3xl px-6 mt-16 text-center">
-          <div className="rounded-2xl border border-white/5 bg-gradient-to-r from-zinc-900 to-zinc-900/50 p-8 sm:p-12 relative overflow-hidden">
-            <div className="absolute -right-16 -top-16 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-            <h2 className="font-display text-2xl font-bold text-white">
-              Ready to protect your eyes?
+        {/* CTA Conversion Box */}
+        <section className="mx-auto max-w-4xl px-6 py-12">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border border-white/5 bg-gradient-to-b from-zinc-900/50 to-black p-10 sm:p-16 text-center relative overflow-hidden"
+          >
+            <div className="absolute -right-24 -top-24 w-48 h-48 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
+            
+            <h2 className="font-display text-3xl font-bold text-white tracking-tight sm:text-4xl">
+              Protect Your Eyes While Reading
             </h2>
-            <p className="mt-3 text-sm text-zinc-400 max-w-lg mx-auto">
-              Start reading and converting your PDFs locally with our collection of dark, AMOLED black, and sepia themes.
+            <p className="mt-4 text-zinc-400 max-w-lg mx-auto text-sm sm:text-base font-light leading-relaxed">
+              Read comfortably in bed or dimly lit study spaces. Experience our responsive, local-first conversion engine now.
             </p>
-            <div className="mt-8 flex justify-center">
+            
+            <div className="mt-8 flex flex-wrap justify-center gap-6 text-xs text-zinc-400">
+              <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                <Check className="w-4 h-4 text-white" /> No Uploads
+              </span>
+              <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                <Check className="w-4 h-4 text-white" /> 100% Offline
+              </span>
+              <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                <Check className="w-4 h-4 text-white" /> AMOLED Themes
+              </span>
+            </div>
+
+            <div className="mt-10 flex justify-center">
               <Link
                 to="/"
-                className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-bold text-black transition-all hover:bg-zinc-200 active:scale-95 shadow-md shadow-white/5"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-xs font-bold text-black transition-all hover:bg-zinc-200 shadow-md active:scale-98"
               >
-                Go to PDF Reader
+                Open Night PDF
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
-          </div>
+          </motion.div>
         </section>
       </main>
     </>
