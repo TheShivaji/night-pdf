@@ -9,7 +9,7 @@ NightPDF is a privacy-first reading platform that converts bright PDFs into opti
 ## Product Preview
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/username/nightpdf/main/public/og-image.png" alt="NightPDF Interface Demo" width="100%" style="border-radius: 12px; border: 1px solid #27272a;" />
+  <img src="Frontend/public/og-image.png" alt="NightPDF Interface Demo" width="100%" style="border-radius: 12px; border: 1px solid #27272a;" />
   <p><em>From harsh white to absolute black in milliseconds.</em></p>
 </div>
 
