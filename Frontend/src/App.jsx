@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import Sidebar from './components/Sidebar';
 import PDFViewer from './components/PDFViewer';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import { loadPdfDocument, convertPdfTheme, getPdfOutline } from './utils/pdfProcessor';
 import { saveRecentFile, updateLastReadPage, getRecentFiles, deleteRecentFile } from './utils/db';
 
-export default function App() {
+// Import core pages
+import FAQPage from './pages/FAQPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import BlogListing from './pages/BlogListing';
+
+// Import blog articles
+import HowToReadPdfAtNight from './pages/blog/HowToReadPdfAtNight';
+import BestPdfDarkModeTools from './pages/blog/BestPdfDarkModeTools';
+import AmoledVsSepia from './pages/blog/AmoledVsSepia';
+import ReduceEyeStrain from './pages/blog/ReduceEyeStrain';
+import ConvertPdfOnMobile from './pages/blog/ConvertPdfOnMobile';
+import DarkModeVsLightMode from './pages/blog/DarkModeVsLightMode';
+
+function ReaderWorkspace() {
   // File & Document States
   const [file, setFile] = useState(null);
   const [pdfDoc, setPdfDoc] = useState(null);
@@ -316,5 +334,32 @@ export default function App() {
         setIsFullscreen={setIsFullscreen}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <HelmetProvider>
+      <Router>
+        <Routes>
+          {/* Main App Reader Workspace */}
+          <Route path="/" element={<ReaderWorkspace />} />
+
+          {/* SaaS Core Pages */}
+          <Route path="/faq" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><FAQPage /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/privacy-policy" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><PrivacyPolicy /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/terms" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><TermsOfService /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/blog" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><BlogListing /><div className="mt-auto"><Footer /></div></div>} />
+
+          {/* Static Blog Posts */}
+          <Route path="/blog/how-to-read-pdf-at-night" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><HowToReadPdfAtNight /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/blog/best-pdf-dark-mode-tools" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><BestPdfDarkModeTools /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/blog/amoled-vs-sepia" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><AmoledVsSepia /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/blog/reduce-eye-strain-while-reading-pdf" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><ReduceEyeStrain /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/blog/convert-pdf-to-dark-mode-on-mobile" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><ConvertPdfOnMobile /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/blog/dark-mode-vs-light-mode-reading" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><DarkModeVsLightMode /><div className="mt-auto"><Footer /></div></div>} />
+        </Routes>
+      </Router>
+    </HelmetProvider>
   );
 }
