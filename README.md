@@ -1,109 +1,168 @@
-# 🌙 Night PDF
+# NightPDF
 
-> **Convert bright, eye-straining PDFs into dark-themed, night-friendly documents — 100% in your browser.**
+**Turn Any PDF Into Eye-Friendly Dark Mode**
 
-[![JavaScript](https://img.shields.io/badge/Language-JavaScript-F7DF1E?style=flat-square&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![React](https://img.shields.io/badge/Framework-React-61DAFB?style=flat-square&logo=react)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+NightPDF is a privacy-first reading platform that converts bright PDFs into optimized reading experiences directly inside your browser. Built for extended reading sessions, it eliminates eye strain through local processing without ever uploading your documents to a server.
 
 ---
 
-## 📖 What is Night PDF?
+## Product Preview
 
-**Night PDF** is an eye-friendly PDF reader and converter. While the project originally started as a backend API, it has been upgraded to a **100% client-side web application**. 
-
-Now, you can upload, read, and convert bright, high-glare PDFs into gorgeous dark-themed documents directly inside your browser. No files are uploaded to any server, ensuring complete privacy, zero network delay, and lightning-fast previews!
-
----
-
-## ✨ Features
-
-- 🌑 **8 Eye-Friendly Themes** — Dark Mode, Amoled Black, Sepia Reader, Midnight Blue, Dracula Purple, Forest Green, Cool Slate, and Original.
-- 👁️ **Smart Color Preservation** — An advanced HSL-based conversion mode that inverts bright backgrounds but preserves the hue and contrast of colored text, graphs, diagrams, and illustrations so they remain readable in dark mode.
-- ⚡ **Real-Time Interactive Reader** — Read pages immediately with zoom, page-flipping, and theme previews without waiting for full document conversion.
-- 🛡️ **100% Private & Secure** — All processing happens locally in your browser using Web APIs. Your files never leave your computer.
-- 🔧 **Customizable Quality** — Choose output resolution from Normal (1x scale for small sizes) to Ultra Crisp (3x scale) to fit your reading and printing needs.
+<div align="center">
+  <img src="https://raw.githubusercontent.com/username/nightpdf/main/public/og-image.png" alt="NightPDF Interface Demo" width="100%" style="border-radius: 12px; border: 1px solid #27272a;" />
+  <p><em>From harsh white to absolute black in milliseconds.</em></p>
+</div>
 
 ---
 
-## 🚀 Getting Started (Client-Side Web App)
+## Why NightPDF Exists
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) v16 or higher
-- npm or yarn
+Most PDF readers were designed for daylight. They lack proper theming, and the white backgrounds cause significant eye strain during long reading sessions at night. 
 
-### Run the App Locally
-1. Clone the repository and navigate to the `Frontend` directory:
-   ```bash
-   cd pdf/Frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-4. Open the displayed URL (usually `http://localhost:5173/` or `http://localhost:5174/`) in your browser.
+While online converters exist, they require uploading sensitive research, books, or proprietary documents to remote servers—introducing major privacy concerns. 
+
+NightPDF solves this by bringing powerful PDF manipulation entirely into the browser via WebAssembly, guaranteeing 100% privacy and offline support.
+
+---
+
+## Core Features
+
+| Feature | Description |
+| :--- | :--- |
+| **Complete Privacy** | 100% local processing. Files never leave your device. |
+| **Dynamic Theming** | AMOLED Black, Sepia, Dark Gray, and Custom Modes. |
+| **Eye-Strain Reduction** | Intelligently inverts white backgrounds while preserving images. |
+| **Offline Architecture** | Fully functional without an internet connection (PWA Ready). |
+| **Universal Support** | Read and export your customized PDFs seamlessly. |
+| **Responsive Design** | Optimized reading experience across desktop and mobile. |
+
+---
+
+## Interactive Themes
+
+NightPDF ships with carefully calibrated reading environments:
+
+- **AMOLED Black (#000000):** Maximizes battery life on OLED screens and provides the highest contrast for late-night reading.
+- **Sepia:** Emulates physical paper with warm tones, reducing blue light emission for evening study.
+- **Dark Gray:** A softer alternative to pure black, offering comfortable contrast without intense extremity.
+- **Custom Theme:** Fine-tune background and text hex colors to match your exact visual preference.
+
+---
+
+## Privacy First Architecture
+
+NightPDF was engineered with a fundamental principle: **Your documents are yours.**
+
+* **No Cloud Processing:** We don't have servers that process your PDFs. 
+* **Zero Tracking:** We don't track what you read, how long you read, or what you upload.
+* **HIPAA/Research Compliant:** Because the processing happens strictly in your browser's local memory, it is safe for medical, legal, and proprietary research documents.
+
+---
+
+## How It Works
+
+1. **Upload PDF** — Drag and drop any PDF into the secure browser environment.
+2. **Choose Theme** — Select AMOLED, Sepia, or build your own environment.
+3. **Read Comfortably** — Enjoy an optimized, glare-free reading experience.
+4. **Export** — Download the permanently themed PDF for offline use anywhere.
+
+---
+
+## Tech Stack
+
+NightPDF is built on a modern, high-performance web stack:
+
+| Layer | Technology |
+| :--- | :--- |
+| **Framework** | React + Vite |
+| **Styling** | Tailwind CSS |
+| **Animations** | GSAP (GreenSock) |
+| **PDF Engine** | Mozilla PDF.js |
+| **Deployment** | Vercel / Edge Network |
+
+---
+
+## Performance
+
+- **Browser-Native:** Runs entirely on the client side using modern Web APIs.
+- **Offline Support:** Service workers cache the application for instant loading, even on airplanes.
+- **Fast Rendering:** Optimized virtualized rendering ensures 1000+ page documents load smoothly.
+- **Zero Backend Dependency:** No API latency, no server downtime, no rate limits.
+
+---
+
+## Installation & Local Development
+
+To run NightPDF locally for development or contribution:
+
+```bash
+# Clone the repository
+git clone https://github.com/username/nightpdf.git
+
+# Navigate to the frontend directory
+cd nightpdf/Frontend
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
 
 ### Build for Production
-To bundle the static application for free deployment on GitHub Pages, Vercel, or Netlify:
+
 ```bash
+# Create an optimized production build
 npm run build
-```
-The output files will be created in the `Frontend/dist/` directory.
 
----
-
-## 🛠️ Original Backend API (Optional Alternative)
-
-If you need a backend REST API endpoint for server-to-server PDF conversion:
-
-### Running the Backend Server
-1. Navigate to the `Backend` directory:
-   ```bash
-   cd pdf/Backend
-   ```
-2. Install backend dependencies (requires system installation of `poppler` binaries):
-   ```bash
-   npm install
-   ```
-3. Start the server:
-   ```bash
-   npm run dev
-   ```
-
-### API Endpoint
-**POST** `http://localhost:3000/api/user/upload`
-
-Upload a PDF file and request a theme parameter (e.g. `?theme=dark`):
-```bash
-curl -X POST http://localhost:3000/api/user/upload?theme=dark \
-  -F "pdf=@your-document.pdf" \
-  -o dark-document.pdf
+# Preview the production build locally
+npm run preview
 ```
 
 ---
 
-## 📁 Project Structure
+## Folder Structure
 
-```
-night-pdf/
-├── Frontend/           # Brand new client-side React App (Vite)
+```text
+NightPDF/
+├── Frontend/
+│   ├── public/              # Static assets (Favicons, Service Workers)
 │   ├── src/
-│   │   ├── utils/
-│   │   │   ├── themeEngine.js   # Custom HSL canvas pixel processor
-│   │   │   └── pdfProcessor.js  # pdfjs-dist & pdf-lib assembler
-│   │   ├── App.jsx              # Main UI layout and interaction
-│   │   └── index.css            # Custom glassmorphic CSS styling
-│   └── package.json
-└── Backend/            # Express server for alternative API processing
+│   │   ├── components/      # Reusable React UI components
+│   │   ├── pages/           # Route-level components (Blog, Legal)
+│   │   ├── utils/           # Helper functions & PDF processing logic
+│   │   ├── App.jsx          # Main application routing & state
+│   │   ├── index.css        # Tailwind directives & global styling
+│   │   └── main.jsx         # React application entry point
+│   ├── index.html           # HTML template
+│   ├── package.json         # Dependencies & scripts
+│   ├── tailwind.config.js   # Tailwind design system configuration
+│   └── vite.config.js       # Vite build tooling configuration
+└── README.md                # Project documentation
 ```
 
 ---
 
-## 📄 License
+## Roadmap
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+NightPDF is evolving from a single utility into a comprehensive reading platform:
+
+- [ ] **AI Reading Assistant** — Local LLM integration for context querying.
+- [ ] **PDF Notes & Smart Highlights** — Persistent, exportable annotations.
+- [ ] **Research Workspace** — Tabbed interface for multi-document workflows.
+- [ ] **Reading Analytics** — Local insights into reading velocity and habits.
+- [ ] **RAG Knowledge Base** — Connect multiple PDFs into a searchable graph.
+
+---
+
+## Contributing
+
+We welcome contributions from the community. Whether it's a new feature, a bug fix, or a documentation improvement, please feel free to open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+*Built for students, researchers, developers, and anyone who reads PDFs late into the night.*

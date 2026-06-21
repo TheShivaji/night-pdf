@@ -13,7 +13,6 @@ import {
   Minimize
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
-import UploadZone from './UploadZone';
 import { applyThemeToImageData } from '../utils/themeEngine';
 import { applyBoldingToCanvas } from '../utils/pdfProcessor';
 
@@ -380,20 +379,12 @@ export default function PDFViewer({
             </button>
           )}
           
-          {pdfDoc ? (
-            <span className="page-indicator">
-              {getPageIndicatorText()}
-            </span>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="logo-icon">🌙</span>
-              <span className="logo-text" style={{ fontSize: '16px' }}>Night PDF</span>
-            </div>
-          )}
+          <span className="page-indicator">
+            {getPageIndicatorText()}
+          </span>
         </div>
         
-        {pdfDoc && (
-          <div className="toolbar-controls">
+        <div className="toolbar-controls">
             {/* Toggle Scroll Mode */}
             <button 
               className={`toolbar-btn ${isContinuous ? 'active' : ''}`}
@@ -487,12 +478,10 @@ export default function PDFViewer({
               <X size={18} />
             </button>
           </div>
-        )}
       </div>
 
       {/* Viewer Panel */}
-      <div className="viewer-panel" style={{ display: pdfDoc ? 'block' : 'flex' }}>
-        {pdfDoc ? (
+      <div className="viewer-panel" style={{ display: 'block' }}>
           <div style={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -553,75 +542,6 @@ export default function PDFViewer({
               </div>
             )}
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', width: '100%' }}>
-            <UploadZone onFileSelected={onFileSelected} errorMsg={errorMsg} />
-
-            {/* Recent Files List Panel */}
-            {recentFiles && recentFiles.length > 0 && (
-              <div className="recent-files-section" style={{ width: '100%', maxWidth: '420px', textAlign: 'left' }}>
-                <h4 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)', marginBottom: '12px', fontWeight: 700 }}>
-                  Recent Documents
-                </h4>
-                <div className="recent-files-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {recentFiles.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="recent-file-card" 
-                      onClick={() => {
-                        const fileObj = new File([item.data], item.name, { type: 'application/pdf' });
-                        onFileSelected(fileObj, item.currentPage || 1);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '12px',
-                        background: 'var(--bg-sidebar)',
-                        border: '1px solid var(--border-light)',
-                        borderRadius: 'var(--radius-md)',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s ease, border-color 0.2s'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
-                        <span style={{ fontSize: '20px' }}>📄</span>
-                        <div style={{ overflow: 'hidden' }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.name}>
-                            {item.name}
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                            Page {item.currentPage || 1} of {item.totalPages} • {formatFileSize(item.size)}
-                          </div>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={(e) => onDeleteRecent(item.id, e)}
-                        title="Remove from history"
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--text-muted)',
-                          cursor: 'pointer',
-                          padding: '6px',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'color 0.2s, background-color 0.2s'
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </main>
   );

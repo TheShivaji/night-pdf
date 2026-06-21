@@ -11,6 +11,11 @@ import {
   Sliders,
   RotateCcw,
   Eye,
+  Settings,
+  ChevronRight,
+  BookOpen,
+  Clock,
+  LayoutTemplate
 } from "lucide-react";
 import { THEME_PRESETS } from "../utils/themeEngine";
 
@@ -44,7 +49,10 @@ export default function Sidebar({
   pagesToConvertStr,
   setPagesToConvertStr,
   outline,
-  setCurrentPage
+  setCurrentPage,
+  recentFiles,
+  onDeleteRecent,
+  onFileSelected
 }) {
   const [activeTab, setActiveTab] = useState('settings');
 
@@ -165,8 +173,24 @@ export default function Sidebar({
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span className="logo-icon">🌙</span>
           <span className="logo-text">Night PDF</span>
-          <span className="logo-beta">Client</span>
         </div>
+        {/* Product Identity Block (Empty State Only) */}
+        {!pdfDoc && (
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>Eye-Friendly PDF Reader</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: '#10b981' }}>✓</span> 100% Local
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: '#10b981' }}>✓</span> No Uploads
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: '#10b981' }}>✓</span> Works Offline
+              </div>
+            </div>
+          </div>
+        )}
         {isMobile && (
           <button
             className="sidebar-close-mobile"
@@ -765,15 +789,133 @@ export default function Sidebar({
             )}
           </>
         ) : (
-          <div className="sidebar-placeholder">
-            <Moon
-              size={24}
-              style={{ color: "var(--text-muted)", marginBottom: "12px" }}
-            />
-            <p>No document active.</p>
-            <p style={{ fontSize: "11px", marginTop: "6px" }}>
-              Upload a PDF in the center panel to customize reader settings.
-            </p>
+          <div className="sidebar-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '32px', animation: 'fadeIn 0.3s ease forwards' }}>
+            
+            {/* Recent Documents */}
+            {recentFiles && recentFiles.length > 0 && (
+              <div className="dashboard-section">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <Clock size={14} style={{ color: 'var(--text-secondary)' }} />
+                  <h3 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                    Recent Documents
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {recentFiles.map((item) => (
+                    <div 
+                      key={item.id}
+                      onClick={() => {
+                        const fileObj = new File([item.data], item.name, { type: 'application/pdf' });
+                        onFileSelected(fileObj, item.currentPage || 1);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: '1px solid transparent',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--bg-card)';
+                        e.currentTarget.style.borderColor = 'var(--border-light)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = 'transparent';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FileText size={14} style={{ color: 'var(--text-secondary)' }} />
+                        </div>
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Page {item.currentPage || 1} of {item.totalPages}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={(e) => onDeleteRecent(item.id, e)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '4px',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'var(--text-muted)';
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Theme Presets */}
+            <div className="dashboard-section" style={{ marginTop: recentFiles && recentFiles.length > 0 ? '0' : '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                  Theme Presets
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  { name: 'AMOLED Black', color: '#000000', border: 'rgba(255,255,255,0.2)' },
+                  { name: 'Sepia', color: '#f4ecd8', border: 'transparent' },
+                  { name: 'Dark Gray', color: '#1c1c1e', border: 'rgba(255,255,255,0.1)' },
+                  { name: 'Custom Theme', color: 'linear-gradient(135deg, #2a2a2a, #1a1a1a)', border: 'rgba(255,255,255,0.1)' }
+                ].map((t, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.color, border: `1px solid ${t.border}` }} />
+                    <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{t.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reading Modes */}
+            <div className="dashboard-section">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                  Reading Modes
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  'Eye-Friendly Reading',
+                  'AMOLED Optimized',
+                  'Offline Access',
+                  'Local Processing'
+                ].map((mode, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>✓</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{mode}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
           </div>
         )}
       </div>

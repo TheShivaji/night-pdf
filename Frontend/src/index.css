@@ -103,7 +103,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Sidebar Styling - Collapsible Translation style */
 .sidebar {
-  width: 380px;
+  width: 30%;
+  max-width: 400px;
+  min-width: 320px;
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--border-light);
   display: flex;

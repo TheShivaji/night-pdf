@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NightPDF OG Image V2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #000000;
+      color: #ffffff;
+      width: 1200px;
+      height: 630px;
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="bg-black text-white w-[1200px] h-[630px] p-12 flex flex-col relative overflow-hidden box-border border-2 border-zinc-900">
+  
+  <!-- Subtle Ambient Glow -->
+  <div class="absolute top-1/2 left-[60%] -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.03] blur-[120px] rounded-full pointer-events-none z-0"></div>
+
+  <!-- Premium Navbar -->
+  <div class="w-full flex justify-between items-center z-30">
+    <!-- Left: Logo -->
+    <div class="flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-200"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+      <span class="text-[18px] font-extrabold tracking-tight text-white">NightPDF</span>
+    </div>
+    
+    <!-- Center: Floating Pill Menu -->
+    <div class="flex items-center gap-8 px-8 py-2.5 rounded-full border border-zinc-800 bg-zinc-900/60 shadow-lg backdrop-blur-md text-[13px] font-semibold text-zinc-400">
+      <span class="text-white cursor-pointer">Home</span>
+      <span class="cursor-pointer">FAQ</span>
+      <span class="cursor-pointer">Blog</span>
+    </div>
+
+    <!-- Right: CTA Button -->
+    <div class="px-6 py-2.5 rounded-full bg-white text-black text-[13px] font-extrabold shadow-md cursor-pointer">
+      Open PDF Reader
+    </div>
+  </div>
+
+  <!-- Main Content Area: 45% / 55% Split -->
+  <div class="w-full flex-1 flex mt-10 z-20 relative">
+    
+    <!-- Left: 45% Content -->
+    <div class="w-[45%] h-full flex flex-col justify-center pr-10 pb-8 relative">
+      <h1 class="text-[48px] leading-[1.08] font-extrabold tracking-tight mb-5 text-white">
+        Turn Any PDF Into<br/>Eye-Friendly<br/>Dark Mode
+      </h1>
+      
+      <div class="text-[19px] text-zinc-400 font-light leading-relaxed mb-10 max-w-[460px]">
+        <p class="mb-3">Read comfortably at night with AMOLED, Sepia, and custom themes.</p>
+        <p class="text-zinc-500">All processing happens locally in your browser.</p>
+      </div>
+
+      <!-- Trust Line -->
+      <div class="text-[13px] font-semibold text-zinc-500 tracking-wide flex items-center">
+        100% Local <span class="mx-2 opacity-50">•</span> No Uploads <span class="mx-2 opacity-50">•</span> Works Offline <span class="mx-2 opacity-50">•</span> Private by Design
+      </div>
+
+      <!-- Bottom Branding -->
+      <div class="absolute bottom-4 left-0 flex flex-col gap-0.5">
+        <div class="text-[15px] font-extrabold text-zinc-600 tracking-wider">NightPDF</div>
+        <div class="text-[13px] font-medium text-zinc-700">pdf.theshivaji.in</div>
+      </div>
+    </div>
+
+    <!-- Right: 55% Product Showcase -->
+    <div class="w-[55%] h-full relative flex items-center justify-center">
+       
+       <!-- White Original PDF (-4deg, behind) -->
+       <div class="absolute left-4 top-[48%] -translate-y-1/2 w-[270px] h-[380px] bg-white rounded-xl shadow-2xl p-7 flex flex-col gap-4 border border-zinc-200 transform -rotate-3 z-10 opacity-90 scale-95">
+          <div class="w-3/4 h-3.5 rounded-sm bg-zinc-300 mb-1"></div>
+          <div class="w-full h-1.5 rounded-sm bg-zinc-100"></div>
+          <div class="w-[90%] h-1.5 rounded-sm bg-zinc-100"></div>
+          <div class="w-full h-1.5 rounded-sm bg-zinc-100 mb-2"></div>
+          
+          <div class="border border-dashed border-zinc-300 p-3 rounded-lg">
+            <div class="w-full flex justify-between border-b border-zinc-200 pb-2 mb-2">
+              <div class="w-12 h-1.5 bg-zinc-300"></div><div class="w-12 h-1.5 bg-zinc-300"></div>
+            </div>
+            <div class="w-full flex justify-between mb-1.5 mt-2">
+              <div class="w-16 h-1 bg-zinc-200"></div><div class="w-10 h-1 bg-zinc-200"></div>
+            </div>
+            <div class="w-full flex justify-between">
+              <div class="w-14 h-1 bg-zinc-200"></div><div class="w-10 h-1 bg-zinc-200"></div>
+            </div>
+          </div>
+
+          <div class="w-full h-1.5 rounded-sm bg-zinc-100 mt-2"></div>
+          <div class="w-full h-1.5 rounded-sm bg-zinc-100"></div>
+          <div class="w-full flex mt-1"><div class="w-3/4 h-2 rounded-sm bg-yellow-200"></div></div>
+       </div>
+
+       <!-- Transformation Indicator -->
+       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-700 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,1)] ring-4 ring-black">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </div>
+       </div>
+
+       <!-- Dark AMOLED PDF (+3deg, front) -->
+       <div class="absolute right-4 top-[50%] -translate-y-1/2 w-[270px] h-[380px] bg-black rounded-xl shadow-[0_40px_80px_-10px_rgba(0,0,0,1)] p-7 flex flex-col gap-4 border border-zinc-700 transform rotate-3 z-30 scale-105">
+          <div class="absolute inset-0 rounded-xl shadow-[0_0_60px_rgba(255,255,255,0.05)] pointer-events-none"></div>
+          
+          <div class="w-3/4 h-3.5 rounded-sm bg-zinc-400 mb-1"></div>
+          <div class="w-full h-1.5 rounded-sm bg-zinc-800"></div>
+          <div class="w-[90%] h-1.5 rounded-sm bg-zinc-800"></div>
+          <div class="w-full h-1.5 rounded-sm bg-zinc-800 mb-2"></div>
+          
+          <div class="border border-dashed border-zinc-700 p-3 rounded-lg bg-zinc-900/60">
+            <div class="w-full flex justify-between border-b border-zinc-700 pb-2 mb-2">
+              <div class="w-12 h-1.5 bg-zinc-500"></div><div class="w-12 h-1.5 bg-zinc-500"></div>
+            </div>
+            <div class="w-full flex justify-between mb-1.5 mt-2">
+              <div class="w-16 h-1 bg-zinc-700"></div><div class="w-10 h-1 bg-zinc-700"></div>
+            </div>
+            <div class="w-full flex justify-between">
+              <div class="w-14 h-1 bg-zinc-700"></div><div class="w-10 h-1 bg-zinc-700"></div>
+            </div>
+          </div>
+
+          <div class="w-full h-1.5 rounded-sm bg-zinc-800 mt-2"></div>
+          <div class="w-full h-1.5 rounded-sm bg-zinc-800"></div>
+          <div class="w-full flex mt-1"><div class="w-3/4 h-2 rounded-sm bg-yellow-400/20"></div></div>
+       </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

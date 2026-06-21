@@ -88,7 +88,7 @@ export default function Navbar() {
                 to="/"
                 className="group inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[12px] font-bold text-black shadow-lg shadow-white/10 hover:bg-zinc-100 transition-all duration-200 active:scale-95"
               >
-                Open PDF Reader
+                Upload PDF
                 <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </Link>
             </div>
@@ -143,7 +143,7 @@ export default function Navbar() {
                     to="/"
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-bold text-black hover:bg-zinc-100 transition-colors"
                   >
-                    Open PDF Reader
+                    Upload PDF
                     <ArrowUpRight className="w-4 h-4" />
                   </Link>
                 </div>

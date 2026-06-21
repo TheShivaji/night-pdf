@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Sidebar from './components/Sidebar';
 import PDFViewer from './components/PDFViewer';
+import EmptyStateHero from './components/EmptyStateHero';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { loadPdfDocument, convertPdfTheme, getPdfOutline } from './utils/pdfProcessor';
@@ -265,75 +266,88 @@ function ReaderWorkspace() {
   };
 
   return (
-    <div className={`app-container ${isFullscreen ? 'zen-mode' : ''}`}>
-      {/* Mobile Sidebar Overlay */}
-      {isMobile && isSidebarOpen && (
-        <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+    <>
+      {!pdfDoc ? (
+        <div className="flex flex-col min-h-screen bg-black text-white w-full">
+          <Navbar />
+          <EmptyStateHero onFileSelected={processUploadedFile} errorMsg={errorMsg} recentFiles={recentFiles} onDeleteRecent={handleDeleteRecent} />
+          <Footer />
+        </div>
+      ) : (
+        <div className={`app-container ${isFullscreen ? 'zen-mode' : ''}`}>
+          {/* Mobile Sidebar Overlay */}
+          {isMobile && isSidebarOpen && pdfDoc && (
+            <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+          )}
+
+          {/* Left Sidebar Config Panel */}
+          <Sidebar
+            file={file}
+            pdfDoc={pdfDoc}
+            numPages={numPages}
+            selectedTheme={selectedTheme}
+            setSelectedTheme={setSelectedTheme}
+            customTheme={customTheme}
+            setCustomTheme={setCustomTheme}
+            mode={mode}
+            setMode={setMode}
+            quality={quality}
+            setQuality={setQuality}
+            brightness={brightness}
+            setBrightness={setBrightness}
+            contrast={contrast}
+            setContrast={setContrast}
+            boldness={boldness}
+            setBoldness={setBoldness}
+            isProcessing={isProcessing}
+            progress={progress}
+            clearFile={clearFile}
+            handleDownload={handleDownload}
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            isMobile={isMobile}
+            downloadMode={downloadMode}
+            setDownloadMode={setDownloadMode}
+            pagesToConvertStr={pagesToConvertStr}
+            setPagesToConvertStr={setPagesToConvertStr}
+            outline={outline}
+            setCurrentPage={setCurrentPage}
+            recentFiles={recentFiles}
+            onDeleteRecent={handleDeleteRecent}
+            onFileSelected={processUploadedFile}
+          />
+
+          {/* Right Main Viewer Pane */}
+          <PDFViewer
+            pdfDoc={pdfDoc}
+            numPages={numPages}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            zoom={zoom}
+            setZoom={setZoom}
+            selectedTheme={selectedTheme}
+            customTheme={customTheme}
+            mode={mode}
+            brightness={brightness}
+            contrast={contrast}
+            boldness={boldness}
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            isMobile={isMobile}
+            isProcessing={isProcessing}
+            onFileSelected={processUploadedFile}
+            clearFile={clearFile}
+            errorMsg={errorMsg}
+            recentFiles={recentFiles}
+            onDeleteRecent={handleDeleteRecent}
+            isBookMode={isBookMode}
+            setIsBookMode={setIsBookMode}
+            isFullscreen={isFullscreen}
+            setIsFullscreen={setIsFullscreen}
+          />
+        </div>
       )}
-
-      {/* Left Sidebar Config Panel */}
-      <Sidebar
-        file={file}
-        pdfDoc={pdfDoc}
-        numPages={numPages}
-        selectedTheme={selectedTheme}
-        setSelectedTheme={setSelectedTheme}
-        customTheme={customTheme}
-        setCustomTheme={setCustomTheme}
-        mode={mode}
-        setMode={setMode}
-        quality={quality}
-        setQuality={setQuality}
-        brightness={brightness}
-        setBrightness={setBrightness}
-        contrast={contrast}
-        setContrast={setContrast}
-        boldness={boldness}
-        setBoldness={setBoldness}
-        isProcessing={isProcessing}
-        progress={progress}
-        clearFile={clearFile}
-        handleDownload={handleDownload}
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-        isMobile={isMobile}
-        downloadMode={downloadMode}
-        setDownloadMode={setDownloadMode}
-        pagesToConvertStr={pagesToConvertStr}
-        setPagesToConvertStr={setPagesToConvertStr}
-        outline={outline}
-        setCurrentPage={setCurrentPage}
-      />
-
-      {/* Right Main Viewer Pane / Centered Drag-Drop Box */}
-      <PDFViewer
-        pdfDoc={pdfDoc}
-        numPages={numPages}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        zoom={zoom}
-        setZoom={setZoom}
-        selectedTheme={selectedTheme}
-        customTheme={customTheme}
-        mode={mode}
-        brightness={brightness}
-        contrast={contrast}
-        boldness={boldness}
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-        isMobile={isMobile}
-        isProcessing={isProcessing}
-        onFileSelected={processUploadedFile}
-        clearFile={clearFile}
-        errorMsg={errorMsg}
-        recentFiles={recentFiles}
-        onDeleteRecent={handleDeleteRecent}
-        isBookMode={isBookMode}
-        setIsBookMode={setIsBookMode}
-        isFullscreen={isFullscreen}
-        setIsFullscreen={setIsFullscreen}
-      />
-    </div>
+    </>
   );
 }
 
