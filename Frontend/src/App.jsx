@@ -32,18 +32,38 @@ function ReaderWorkspace() {
   const [zoom, setZoom] = useState(1.0);
 
   // Configuration States
-  const [selectedTheme, setSelectedTheme] = useState('dark');
+  const loadSetting = (key, defaultVal) => {
+    try {
+      const stored = localStorage.getItem('nightpdf_settings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed[key] !== undefined) return parsed[key];
+      }
+    } catch (e) {}
+    return defaultVal;
+  };
+
+  const [selectedTheme, setSelectedTheme] = useState(() => loadSetting('selectedTheme', 'dark'));
   const [customTheme, setCustomTheme] = useState({
     bgHex: '#1a1a1a',
     fgHex: '#f3f4f6',
     bg: { r: 26, g: 26, b: 26 },
     fg: { r: 243, g: 244, b: 246 }
   });
-  const [mode, setMode] = useState('smart'); // 'smart' | 'duotone' | 'original' (no-invert colors)
-  const [quality, setQuality] = useState(2.0); // 1.0 = Normal, 2.0 = High, 3.0 = Super Crisp
-  const [brightness, setBrightness] = useState(0); // -100 to 100
-  const [contrast, setContrast] = useState(0); // -100 to 100
-  const [boldness, setBoldness] = useState(0); // 0 to 2 (pixel offset)
+  const [mode, setMode] = useState(() => loadSetting('mode', 'smart')); 
+  const [quality, setQuality] = useState(2.0); 
+  const [brightness, setBrightness] = useState(() => loadSetting('brightness', 0)); 
+  const [contrast, setContrast] = useState(() => loadSetting('contrast', 0)); 
+  const [boldness, setBoldness] = useState(() => loadSetting('boldness', 0)); 
+
+  // Save Settings
+  useEffect(() => {
+    try {
+      localStorage.setItem('nightpdf_settings', JSON.stringify({
+        selectedTheme, mode, brightness, contrast, boldness
+      }));
+    } catch (e) {}
+  }, [selectedTheme, mode, brightness, contrast, boldness]);
 
   // Download settings
   const [downloadMode, setDownloadMode] = useState('all'); // 'all' | 'range'
@@ -100,6 +120,15 @@ function ReaderWorkspace() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // 3. Auto-collapse sidebar on fullscreen
+  useEffect(() => {
+    if (isFullscreen && !isMobile) {
+      setIsSidebarOpen(false);
+    } else if (!isFullscreen && !isMobile) {
+      setIsSidebarOpen(true);
+    }
+  }, [isFullscreen, isMobile]);
+
   // 3. Auto-save reading progress on page changes
   useEffect(() => {
     if (file && pdfDoc && currentPage) {
@@ -152,6 +181,28 @@ function ReaderWorkspace() {
       console.error(err);
       setErrorMsg('Failed to parse PDF. The file may be corrupted.');
       setFile(null);
+    }
+  };
+
+  // 5. Session Recovery Handler (Safety wrapped)
+  const handleResumeSession = async (recentFileRecord) => {
+    try {
+      if (!recentFileRecord || !recentFileRecord.data) {
+        throw new Error('No valid PDF data found for resume.');
+      }
+      
+      // Reconstruct File object from ArrayBuffer
+      const reconstructedFile = new File([recentFileRecord.data], recentFileRecord.name, {
+        type: 'application/pdf',
+        lastModified: recentFileRecord.lastReadTime || Date.now()
+      });
+      
+      // Process it normally, jumping to the saved page
+      await processUploadedFile(reconstructedFile, recentFileRecord.currentPage || 1);
+    } catch (err) {
+      console.warn('Failed to resume session safely. Falling back to normal upload experience.', err);
+      // Remove corrupted entry and hide resume card without blocking UI
+      if (recentFileRecord?.id) handleDeleteRecent(recentFileRecord.id);
     }
   };
 
@@ -270,7 +321,13 @@ function ReaderWorkspace() {
       {!pdfDoc ? (
         <div className="flex flex-col min-h-screen bg-black text-white w-full">
           <Navbar />
-          <EmptyStateHero onFileSelected={processUploadedFile} errorMsg={errorMsg} recentFiles={recentFiles} onDeleteRecent={handleDeleteRecent} />
+          <EmptyStateHero 
+            onFileSelected={processUploadedFile} 
+            errorMsg={errorMsg} 
+            recentFiles={recentFiles} 
+            onDeleteRecent={handleDeleteRecent}
+            onResumeSession={handleResumeSession} 
+          />
           <Footer />
         </div>
       ) : (
@@ -326,6 +383,7 @@ function ReaderWorkspace() {
             zoom={zoom}
             setZoom={setZoom}
             selectedTheme={selectedTheme}
+            setSelectedTheme={setSelectedTheme}
             customTheme={customTheme}
             mode={mode}
             brightness={brightness}

@@ -3,7 +3,11 @@ import { motion } from 'framer-motion';
 import UploadZone from './UploadZone';
 import InteractiveDemo from './InteractiveDemo';
 
-export default function EmptyStateHero({ onFileSelected, errorMsg }) {
+import { Clock, Play } from 'lucide-react';
+
+export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, onResumeSession }) {
+  const lastSession = recentFiles && recentFiles.length > 0 ? recentFiles[0] : null;
+
   return (
     <div className="w-full flex-1 bg-black text-white pb-32 pt-16 sm:pt-24 px-5 overflow-y-auto">
       <div className="w-full max-w-7xl mx-auto flex flex-col items-center text-center">
@@ -28,6 +32,32 @@ export default function EmptyStateHero({ onFileSelected, errorMsg }) {
           <p className="mb-2">Read comfortably at night with AMOLED, Sepia, and custom themes.</p>
           <p className="text-zinc-500">All processing happens locally in your browser.</p>
         </motion.div>
+
+        {/* Resume Session Card */}
+        {lastSession && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.12 }}
+            className="w-full max-w-xl mx-auto mb-8 bg-[#111113] border border-white/10 rounded-2xl p-5 text-left flex items-center justify-between cursor-pointer hover:border-white/20 transition-all shadow-xl"
+            onClick={() => onResumeSession(lastSession)}
+          >
+            <div className="flex items-center gap-4 overflow-hidden">
+              <div className="bg-white/5 p-3 rounded-xl shrink-0">
+                <Clock className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div className="overflow-hidden">
+                <h3 className="text-white font-semibold text-sm truncate mb-1">Resume Previous Session</h3>
+                <p className="text-zinc-400 text-xs truncate">
+                  {lastSession.name} • Page {lastSession.currentPage || 1}
+                </p>
+              </div>
+            </div>
+            <button className="bg-white text-black px-4 py-2 rounded-lg font-bold text-xs shrink-0 flex items-center gap-2 hover:bg-zinc-200 transition-colors">
+              <Play className="w-3 h-3 fill-black" /> Resume
+            </button>
+          </motion.div>
+        )}
 
         {/* Primary Upload CTA */}
         <motion.div 

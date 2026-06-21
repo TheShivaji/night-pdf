@@ -13,8 +13,9 @@ import {
   Minimize
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { applyThemeToImageData } from '../utils/themeEngine';
+import { applyThemeToImageData, THEME_PRESETS } from '../utils/themeEngine';
 import { applyBoldingToCanvas } from '../utils/pdfProcessor';
+import ShortcutsModal from './ShortcutsModal';
 
 // Helper component for Lazy Rendering a Single Page in Continuous Scroll / Book Mode
 function PDFPageCanvas({ 
@@ -197,6 +198,7 @@ export default function PDFViewer({
   zoom,
   setZoom,
   selectedTheme,
+  setSelectedTheme,
   customTheme,
   mode,
   brightness,
@@ -217,6 +219,7 @@ export default function PDFViewer({
   setIsFullscreen
 }) {
   const [isContinuous, setIsContinuous] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const singleCanvasRef = useRef(null);
   const singleTextLayerRef = useRef(null);
   const singleRenderTaskRef = useRef(null);
@@ -239,6 +242,56 @@ export default function PDFViewer({
       document.exitFullscreen();
     }
   };
+
+  // Keyboard Shortcuts (Reader Scoped)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (
+        e.target.tagName === 'INPUT' || 
+        e.target.tagName === 'TEXTAREA' || 
+        e.target.isContentEditable
+      ) {
+        return; // Ignore if typing
+      }
+
+      switch (e.key) {
+        case 't':
+        case 'T':
+          if (setSelectedTheme) {
+            const themeKeys = Object.keys(THEME_PRESETS);
+            const currentIndex = themeKeys.indexOf(selectedTheme === 'custom' ? 'dark' : selectedTheme);
+            const nextIndex = (currentIndex + 1) % themeKeys.length;
+            setSelectedTheme(themeKeys[nextIndex]);
+          }
+          break;
+        case '+':
+        case '=':
+          setZoom(z => Math.min(z + 0.1, 5.0));
+          break;
+        case '-':
+          setZoom(z => Math.max(z - 0.1, 0.5));
+          break;
+        case 'ArrowRight':
+          setCurrentPage(p => Math.min(p + 1, numPages));
+          break;
+        case 'ArrowLeft':
+          setCurrentPage(p => Math.max(p - 1, 1));
+          break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
+          break;
+        case '?':
+          setIsShortcutsOpen(true);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [numPages, selectedTheme, setSelectedTheme, setCurrentPage, setZoom]);
 
   // Calculate pages for Book Mode (spread double pages)
   const leftPage = currentPage % 2 !== 0 ? currentPage : currentPage - 1;
@@ -366,8 +419,9 @@ export default function PDFViewer({
 
   return (
     <main className="preview-container">
-      {/* Viewer Toolbar */}
-      <div className="preview-toolbar">
+      {/* Top Controls Toolbar */}
+      <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
+      <div className="toolbar px-4 md:px-6">
         <div className="toolbar-info">
           {pdfDoc && (
             <button 
