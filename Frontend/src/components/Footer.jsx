@@ -2,77 +2,86 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
+  const year = new Date().getFullYear();
+
+  const cols = [
+    {
+      heading: 'Product',
+      links: [
+        { label: 'PDF Reader', to: '/' },
+        { label: 'Custom Themes', to: '/' },
+      ],
+    },
+    {
+      heading: 'Resources',
+      links: [
+        { label: 'Blog', to: '/blog' },
+        { label: 'FAQ', to: '/faq' },
+      ],
+    },
+    {
+      heading: 'Legal',
+      links: [
+        { label: 'Privacy Policy', to: '/privacy-policy' },
+        { label: 'Terms of Service', to: '/terms' },
+      ],
+    },
+  ];
 
   return (
-    <footer className="w-full border-t border-white/5 bg-black py-16 text-zinc-500 font-sans">
-      <div className="mx-auto max-w-7xl px-6 sm:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          
-          {/* Logo & Pitch */}
-          <div className="flex flex-col items-start gap-4">
-            <div className="flex items-center gap-2.5 text-white font-extrabold text-lg tracking-tight">
-              <span className="text-xl">🌙</span> Night PDF
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed max-w-xs">
-              A premium, offline-capable utility that converts bright, eye-straining PDFs into gorgeous dark, sepia, and custom themes 100% locally.
+    <footer className="w-full border-t border-white/[0.06] bg-black">
+      <div className="mx-auto max-w-7xl px-6 sm:px-8 py-14">
+        {/* Top Row */}
+        <div className="flex flex-col md:flex-row justify-between gap-12">
+
+          {/* Brand block */}
+          <div className="max-w-xs">
+            <Link to="/" className="inline-flex items-center gap-2.5 mb-5" aria-label="Night PDF">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.08] text-base">🌙</span>
+              <span
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+                className="text-[16px] font-extrabold tracking-tight text-white"
+              >
+                Night<span className="text-zinc-500">PDF</span>
+              </span>
+            </Link>
+            <p className="text-[13px] leading-relaxed text-zinc-500">
+              Convert bright PDFs into eye-friendly dark, sepia, and AMOLED themes—100% in your browser. No uploads, no tracking.
             </p>
-            <p className="text-[10px] text-zinc-600 mt-2">
-              &copy; {currentYear} Night PDF. All rights reserved.
-            </p>
           </div>
 
-          {/* Product Links */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Product</h4>
-            <ul className="space-y-2.5 text-xs">
-              <li>
-                <Link to="/" className="transition-colors hover:text-white">
-                  PDF Reader Workspace
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="transition-colors hover:text-white">
-                  Custom Theme Creator
-                </Link>
-              </li>
-            </ul>
+          {/* Links grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-10">
+            {cols.map((col) => (
+              <div key={col.heading}>
+                <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-zinc-600">
+                  {col.heading}
+                </p>
+                <ul className="space-y-3">
+                  {col.links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        to={link.to}
+                        className="text-[13px] text-zinc-500 hover:text-white transition-colors duration-150"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* Resources Links */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Resources</h4>
-            <ul className="space-y-2.5 text-xs">
-              <li>
-                <Link to="/faq" className="transition-colors hover:text-white">
-                  FAQ & Help Center
-                </Link>
-              </li>
-              <li>
-                <Link to="/blog" className="transition-colors hover:text-white">
-                  Blog & Articles
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal Links */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Legal</h4>
-            <ul className="space-y-2.5 text-xs">
-              <li>
-                <Link to="/privacy-policy" className="transition-colors hover:text-white">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="transition-colors hover:text-white">
-                  Terms of Service
-                </Link>
-              </li>
-            </ul>
-          </div>
-
+        {/* Divider + bottom */}
+        <div className="mt-12 pt-8 border-t border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-[12px] text-zinc-700">
+            © {year} Night PDF. All rights reserved.
+          </p>
+          <p className="text-[11px] text-zinc-800 font-mono tracking-wide">
+            Built with ❤️ for readers who care about their eyes.
+          </p>
         </div>
       </div>
     </footer>

@@ -346,18 +346,18 @@ export default function App() {
           <Route path="/" element={<ReaderWorkspace />} />
 
           {/* SaaS Core Pages */}
-          <Route path="/faq" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><FAQPage /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/privacy-policy" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><PrivacyPolicy /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/terms" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><TermsOfService /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/blog" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><BlogListing /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/faq" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><FAQPage /><Footer /></div>} />
+          <Route path="/privacy-policy" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><PrivacyPolicy /><Footer /></div>} />
+          <Route path="/terms" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><TermsOfService /><Footer /></div>} />
+          <Route path="/blog" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><BlogListing /><Footer /></div>} />
 
           {/* Static Blog Posts */}
-          <Route path="/blog/how-to-read-pdf-at-night" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><HowToReadPdfAtNight /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/blog/best-pdf-dark-mode-tools" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><BestPdfDarkModeTools /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/blog/amoled-vs-sepia" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><AmoledVsSepia /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/blog/reduce-eye-strain-while-reading-pdf" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><ReduceEyeStrain /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/blog/convert-pdf-to-dark-mode-on-mobile" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><ConvertPdfOnMobile /><div className="mt-auto"><Footer /></div></div>} />
-          <Route path="/blog/dark-mode-vs-light-mode-reading" element={<div className="flex flex-col min-h-screen bg-zinc-950 text-white"><Navbar /><DarkModeVsLightMode /><div className="mt-auto"><Footer /></div></div>} />
+          <Route path="/blog/how-to-read-pdf-at-night" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><HowToReadPdfAtNight /><Footer /></div>} />
+          <Route path="/blog/best-pdf-dark-mode-tools" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><BestPdfDarkModeTools /><Footer /></div>} />
+          <Route path="/blog/amoled-vs-sepia" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><AmoledVsSepia /><Footer /></div>} />
+          <Route path="/blog/reduce-eye-strain-while-reading-pdf" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><ReduceEyeStrain /><Footer /></div>} />
+          <Route path="/blog/convert-pdf-to-dark-mode-on-mobile" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><ConvertPdfOnMobile /><Footer /></div>} />
+          <Route path="/blog/dark-mode-vs-light-mode-reading" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><DarkModeVsLightMode /><Footer /></div>} />
         </Routes>
       </Router>
     </HelmetProvider>

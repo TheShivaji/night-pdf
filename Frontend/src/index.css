@@ -1,6 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-/* Night PDF - Modern Black Responsive Redesign */
+/* Night PDF - Premium SaaS Design System */
+
+@layer utilities {
+  .font-display {
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  }
+  .font-sans {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .active-scale-98:active {
+    transform: scale(0.98);
+  }
+}
 
 :root {
   /* Colors - Pure AMOLED Black & Deep Slate */
@@ -38,18 +54,12 @@
   --transition-slow: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Reset & Base Styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+
 
 body {
   background-color: var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-family-sans);
-  overflow: hidden;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
