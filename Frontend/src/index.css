@@ -667,11 +667,12 @@ h1, h2, h3, h4, h5, h6 {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-    padding: 0 4px;
+    padding: 0 8px; /* 8px safe breathing space on both sides */
     gap: 0;
     overflow-x: visible;
     position: absolute; /* Using absolute so dynamic padding-top handles spacing perfectly */
     width: 100%;
+    box-sizing: border-box;
     top: env(safe-area-inset-top, 0);
     z-index: 50;
   }
@@ -695,20 +696,27 @@ h1, h2, h3, h4, h5, h6 {
     width: auto;
     border-top: none;
     padding-top: 0;
-    gap: 8px;
-    flex-shrink: 0;
+    gap: 0; /* Ensures buttons stick together to fit 360px */
+    flex-shrink: 1; /* Allow shrinking if necessary */
   }
 
   .toolbar-btn {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+  
+  .zoom-indicator {
+    min-width: 36px;
+    padding: 0;
+    text-align: center;
   }
   
   .viewer-panel {
     padding: 0; /* Minimize padding to maximize PDF canvas viewing size on mobile */
     padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px);
-    width: 100vw;
+    width: 100%;
   }
   
   .main-upload {

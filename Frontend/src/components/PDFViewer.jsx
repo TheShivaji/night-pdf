@@ -247,6 +247,14 @@ export default function PDFViewer({
       for (const entry of entries) {
         const height = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
         containerRef.current.style.setProperty('--toolbar-height', `${height}px`);
+        
+        // Debugging verification as requested
+        if (toolbarRef.current.scrollWidth > toolbarRef.current.clientWidth) {
+          console.warn('Toolbar Overflow Detected:', {
+            scrollWidth: toolbarRef.current.scrollWidth,
+            clientWidth: toolbarRef.current.clientWidth
+          });
+        }
       }
     });
     
@@ -273,8 +281,9 @@ export default function PDFViewer({
       // Pause if tab is hidden
       if (document.visibilityState === 'hidden') return;
       
-      const containerWidth = viewerPanelRef.current ? viewerPanelRef.current.clientWidth : window.innerWidth;
-      const targetWidth = containerWidth - 16; // 8px padding per side
+      // Use containerRef (preview-container) to get actual screen width, handling safe areas
+      const actualViewerWidth = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
+      const targetWidth = actualViewerWidth - 20; // 10px margin per side
       let newZoom = targetWidth / baseWidth;
       
       // Small PDF protection (max 2.0x scale)
@@ -532,7 +541,7 @@ export default function PDFViewer({
     <main className="preview-container" ref={containerRef}>
       {/* Top Controls Toolbar */}
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
-      <div className="toolbar px-4 md:px-6" ref={toolbarRef}>
+      <div className="toolbar md:px-6" ref={toolbarRef}>
         <div className="toolbar-info">
           {pdfDoc && (
             <button 
@@ -636,7 +645,7 @@ export default function PDFViewer({
               <ZoomIn size={18} />
             </button>
 
-            <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
+            <div className="hidden md:block" style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
 
             {/* Close PDF */}
             <button 
