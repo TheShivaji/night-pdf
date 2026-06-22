@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { FileText, Moon, MousePointer2, ZoomIn, Search, CheckCircle2 } from 'lucide-react';
+import { FileText, Moon, MousePointer2, ZoomIn, Search } from 'lucide-react';
+import { delayRender, continueRender } from 'remotion';
 
 const RealisticDocument = () => {
   return (
@@ -137,11 +138,30 @@ const DesktopLayout = () => (
   </div>
 );
 
-export default function InteractiveDemo() {
+export default function InteractiveDemo({ remotionFrame = null, remotionFps = 60 }) {
   const containerRef = useRef(null);
   const tlRef = useRef(null);
   const [isVisible, setIsVisible] = useState(true);
   const [scale, setScale] = useState(1);
+
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+  const [handle] = useState(() => remotionFrame !== null ? delayRender("Waiting for layout") : null);
+
+  // Layout Stabilization (Guarantees fonts/DOM are locked before frame 0)
+  useEffect(() => {
+    let frameId;
+    const stabilize = async () => {
+      await document.fonts.ready;
+      frameId = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsLayoutReady(true);
+          if (handle !== null) continueRender(handle);
+        });
+      });
+    };
+    stabilize();
+    return () => cancelAnimationFrame(frameId);
+  }, [handle]);
 
   // Responsive dynamic scaling for 1152x648 base
   useEffect(() => {
@@ -157,20 +177,26 @@ export default function InteractiveDemo() {
     return () => observer.disconnect();
   }, []);
 
+  // Visibility logic (bypassed if in Remotion)
   useEffect(() => {
+    if (remotionFrame !== null) {
+      setIsVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.1 }
     );
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [remotionFrame]);
 
   useGSAP(() => {
+    if (!isLayoutReady) return;
     let mm = gsap.matchMedia();
 
     mm.add("(prefers-reduced-motion: no-preference)", () => {
-      // Smooth, deliberate pacing
+      // Smooth, deliberate pacing - EXACTLY the original timeline.
       const tl = gsap.timeline({ repeat: -1, repeatDelay: 1.5 });
       tlRef.current = tl;
 
@@ -218,11 +244,17 @@ export default function InteractiveDemo() {
         .to('.d-doc-content', { y: -220, duration: 4.5, ease: 'sine.inOut' }, '<')
         
         // End sequence
-        .to(['.d-doc-container', '.d-cursor', '.d-border-el', '.d-amoled-btn'], { opacity: 0, duration: 0.8, ease: 'power2.inOut' }, '+=1')
+        .to(['.d-doc-container', '.d-cursor', '.d-doc-border-el', '.d-amoled-btn'], { opacity: 0, duration: 0.8, ease: 'power2.inOut' }, '+=1')
         .to('.d-payoff', { opacity: 1, duration: 1, ease: 'power3.out' })
         .to('.d-payoff', { opacity: 0, duration: 0.8 }, '+=3');
 
-      if (!isVisible) tl.pause(); else tl.play();
+      if (remotionFrame !== null) {
+        tl.pause();
+        tl.seek(remotionFrame / remotionFps);
+      } else {
+        if (!isVisible) tl.pause(); else tl.play();
+      }
+
       return () => tl.kill();
     });
 
@@ -236,20 +268,28 @@ export default function InteractiveDemo() {
     });
 
     return () => mm.revert();
-  }, { scope: containerRef, dependencies: [isVisible] });
+  }, { scope: containerRef, dependencies: [isLayoutReady] });
 
   useEffect(() => {
+    if (remotionFrame !== null && tlRef.current && isLayoutReady) {
+      tlRef.current.pause();
+      tlRef.current.seek(remotionFrame / remotionFps);
+    }
+  }, [remotionFrame, remotionFps, isLayoutReady]);
+
+  useEffect(() => {
+    if (remotionFrame !== null) return;
     if (tlRef.current) {
       if (isVisible) tlRef.current.play();
       else tlRef.current.pause();
     }
-  }, [isVisible]);
+  }, [isVisible, remotionFrame]);
 
   return (
     <div 
       ref={containerRef} 
-      className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden relative shadow-[0_30px_60px_-10px_rgba(0,0,0,0.5)] flex select-none"
-      style={{ height: `${648 * scale}px` }}
+      className={`w-full rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden relative shadow-[0_30px_60px_-10px_rgba(0,0,0,0.5)] flex select-none ${remotionFrame === null ? 'opacity-0 transition-opacity duration-500' : ''}`}
+      style={{ height: `${648 * scale}px`, opacity: isLayoutReady || remotionFrame !== null ? 1 : 0 }}
     >
       {/* 
         1152x648 Base Layout.

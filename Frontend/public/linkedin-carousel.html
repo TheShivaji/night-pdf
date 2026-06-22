@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NightPDF - LinkedIn Carousel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { 
+      background: #000; 
+      color: #fff; 
+      font-family: 'Inter', sans-serif; 
+      margin: 0; 
+      padding: 40px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 40px; 
+      align-items: center; 
+    }
+    h1, h2, h3 { 
+      font-family: 'Outfit', sans-serif; 
+      letter-spacing: -0.03em; 
+    }
+    .slide {
+      width: 1080px;
+      height: 1350px;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    @media print {
+      body { padding: 0; gap: 0; background: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .slide { border: none; page-break-after: always; }
+      @page { size: 1080px 1350px; margin: 0; }
+    }
+    .grid-bg {
+      position: absolute; inset: 0;
+      background-size: 60px 60px;
+      background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+      z-index: 0;
+    }
+    .glow-top {
+      position: absolute; width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 60%);
+      border-radius: 50%; top: -400px; left: 50%; transform: translateX(-50%); z-index: 0;
+    }
+    .glow-center {
+      position: absolute; width: 1000px; height: 1000px;
+      background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%);
+      border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 0;
+    }
+    .content-wrapper { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100%; padding: 120px 100px; }
+    
+    .mockup-window { background: #09090b; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.8); }
+    .mockup-header { height: 40px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; padding: 0 20px; gap: 8px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: #333; }
+    
+    .slide-number { position: absolute; bottom: 60px; right: 100px; font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 600; color: rgba(255,255,255,0.3); z-index: 20; }
+    .swipe-indicator { position: absolute; bottom: 60px; left: 100px; font-size: 20px; font-weight: 500; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 12px; z-index: 20; }
+  </style>
+</head>
+<body>
+
+  <!-- SLIDE 1 -->
+  <div class="slide">
+    <div class="grid-bg"></div>
+    <div class="glow-top"></div>
+    <div class="content-wrapper justify-between">
+      <div class="mt-20">
+        <h1 class="text-[96px] leading-[1.05] font-bold text-white mb-8 max-w-[800px]">Reading PDFs at night was hurting my eyes.</h1>
+        <p class="text-[36px] text-zinc-400 font-light tracking-wide">A small problem turned into a product.</p>
+      </div>
+      <div class="w-full flex-1 mt-20 relative">
+        <div class="mockup-window absolute -bottom-40 left-0 right-0 h-[800px]">
+          <div class="mockup-header">
+            <div class="dot bg-[#ff5f56]"></div><div class="dot bg-[#ffbd2e]"></div><div class="dot bg-[#27c93f]"></div>
+          </div>
+          <div class="p-8 flex items-start gap-8 h-full relative overflow-hidden">
+            <!-- Sidebar fake -->
+            <div class="w-[280px] h-full border-r border-white/10 flex flex-col gap-6">
+              <div class="h-8 w-32 bg-white/10 rounded"></div>
+              <div class="h-32 w-full bg-white/5 rounded-xl border border-white/10"></div>
+              <div class="h-32 w-full bg-white/5 rounded-xl border border-white/10"></div>
+            </div>
+            <!-- PDF fake -->
+            <div class="flex-1 bg-[#111] h-full rounded-xl border border-white/10 flex flex-col items-center justify-center p-20 shadow-2xl relative">
+              <div class="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-white/[0.02]"></div>
+              <div class="w-[70%] h-6 bg-white/20 rounded mb-10"></div>
+              <div class="w-full h-4 bg-white/10 rounded mb-4"></div>
+              <div class="w-full h-4 bg-white/10 rounded mb-4"></div>
+              <div class="w-[90%] h-4 bg-white/10 rounded mb-10"></div>
+              <div class="w-full h-40 bg-white/5 rounded border border-white/10"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="swipe-indicator">Swipe <span>→</span></div>
+    <div class="slide-number">01</div>
+    <div class="absolute top-[60px] right-[100px] flex items-center gap-2.5 text-white/60 font-medium text-[20px] tracking-wide z-20">
+      <svg class="w-[22px] h-[22px] opacity-80" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      TheShivaji
+    </div>
+  </div>
+
+  <!-- SLIDE 2 -->
+  <div class="slide">
+    <div class="content-wrapper justify-center">
+      <h2 class="text-[80px] leading-[1.1] font-bold text-white mb-16">The problem<br>was simple.</h2>
+      <p class="text-[40px] leading-[1.5] text-zinc-300 font-light max-w-[800px]">
+        While writing ML practical manuals and studying from PDFs late at night, I noticed my eyes getting tired after hours of reading bright white pages.
+      </p>
+      
+      <div class="mt-24 p-1 rounded-[32px] bg-gradient-to-br from-white/20 to-transparent w-[800px] mx-auto opacity-80">
+        <div class="bg-black rounded-[30px] p-16 border border-white/10 relative overflow-hidden shadow-2xl">
+          <div class="absolute -right-20 -top-20 w-[400px] h-[400px] bg-white opacity-[0.03] rounded-full blur-[100px]"></div>
+          <div class="flex flex-col gap-8 opacity-40">
+             <div class="w-[80%] h-6 bg-white rounded"></div>
+             <div class="w-full h-6 bg-white rounded"></div>
+             <div class="w-[60%] h-6 bg-white rounded"></div>
+             <div class="w-[90%] h-6 bg-white rounded"></div>
+             <div class="w-[70%] h-6 bg-white rounded"></div>
+          </div>
+          <div class="absolute inset-0 bg-[#000] opacity-[0.85] mix-blend-multiply flex items-center justify-center"></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">02</div>
+    <div class="absolute top-[60px] right-[100px] flex items-center gap-2.5 text-white/60 font-medium text-[20px] tracking-wide z-20">
+      <svg class="w-[22px] h-[22px] opacity-80" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      TheShivaji
+    </div>
+  </div>
+
+  <!-- SLIDE 3 -->
+  <div class="slide">
+    <div class="content-wrapper">
+      <h2 class="text-[80px] leading-[1.1] font-bold text-white mb-16 mt-20">I tried existing tools.</h2>
+      <p class="text-[36px] text-zinc-400 font-light mb-20">Most PDF dark mode tools had problems:</p>
+      
+      <div class="grid grid-cols-2 gap-8">
+        <div class="bg-[#0a0a0c] border border-white/10 rounded-2xl p-10 flex flex-col justify-center">
+          <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white mb-8 border border-white/10">
+            <svg class="w-8 h-8 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </div>
+          <h3 class="text-[32px] font-semibold text-white mb-4">Broken formatting</h3>
+          <p class="text-[22px] text-zinc-500 font-light">Layouts would collapse or invert weirdly.</p>
+        </div>
+        <div class="bg-[#0a0a0c] border border-white/10 rounded-2xl p-10 flex flex-col justify-center">
+          <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white mb-8 border border-white/10">
+             <svg class="w-8 h-8 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+          </div>
+          <h3 class="text-[32px] font-semibold text-white mb-4">Poor readability</h3>
+          <p class="text-[22px] text-zinc-500 font-light">Low contrast made text harder to read.</p>
+        </div>
+        <div class="bg-[#0a0a0c] border border-white/10 rounded-2xl p-10 flex flex-col justify-center">
+          <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white mb-8 border border-white/10">
+            <svg class="w-8 h-8 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </div>
+          <h3 class="text-[32px] font-semibold text-white mb-4">Distorted images</h3>
+          <p class="text-[22px] text-zinc-500 font-light">Colors were inverted inside photos.</p>
+        </div>
+        <div class="bg-[#0a0a0c] border border-white/10 rounded-2xl p-10 flex flex-col justify-center">
+          <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white mb-8 border border-white/10">
+            <svg class="w-8 h-8 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+          </div>
+          <h3 class="text-[32px] font-semibold text-white mb-4">Privacy risks</h3>
+          <p class="text-[22px] text-zinc-500 font-light">Forced uploads to external servers.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">03</div>
+    <div class="absolute top-[60px] right-[100px] flex items-center gap-2.5 text-white/60 font-medium text-[20px] tracking-wide z-20">
+      <svg class="w-[22px] h-[22px] opacity-80" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      TheShivaji
+    </div>
+  </div>
+
+  <!-- SLIDE 4 -->
+  <div class="slide">
+    <div class="glow-center"></div>
+    <div class="content-wrapper justify-center items-center text-center">
+      <h2 class="text-[80px] leading-[1.1] font-bold text-white mb-10">There had to be<br>a better way.</h2>
+      <p class="text-[36px] text-zinc-400 font-light mb-24 max-w-[800px]">
+        Instead of searching for another tool, I decided to build one myself.
+      </p>
+
+      <div class="flex items-center gap-6 text-[28px] font-medium text-white bg-[#111] border border-white/10 px-12 py-8 rounded-full shadow-2xl relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent"></div>
+        <span class="text-zinc-500">Problem</span>
+        <svg class="w-8 h-8 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        <span class="text-zinc-300">Idea</span>
+        <svg class="w-8 h-8 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        <span class="font-bold tracking-tight text-white flex items-center gap-3">
+          <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          NightPDF
+        </span>
+      </div>
+    </div>
+    <div class="slide-number">04</div>
+    <div class="absolute top-[60px] right-[100px] flex items-center gap-2.5 text-white/60 font-medium text-[20px] tracking-wide z-20">
+      <svg class="w-[22px] h-[22px] opacity-80" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      TheShivaji
+    </div>
+  </div>
+
+  <!-- SLIDE 5 -->
+  <div class="slide">
+    <div class="grid-bg"></div>
+    <div class="content-wrapper items-center text-center">
+      <div class="mt-10 mb-16">
+        <h2 class="text-[80px] leading-[1.1] font-bold text-white mb-6">Introducing NightPDF</h2>
+        <p class="text-[32px] text-zinc-400 font-light max-w-[700px] mx-auto">
+          A browser-based PDF reader designed for comfortable night reading.
+        </p>
+      </div>
+      
+      <div class="w-full flex-1 relative">
+        <div class="mockup-window absolute top-0 left-0 right-0 h-[800px] shadow-[0_0_120px_rgba(255,255,255,0.05)] border-white/20">
+          <div class="mockup-header">
+            <div class="dot bg-[#ff5f56]"></div><div class="dot bg-[#ffbd2e]"></div><div class="dot bg-[#27c93f]"></div>
+          </div>
+          <div class="h-full bg-black flex flex-col p-8">
+            <div class="text-left w-full max-w-4xl mx-auto flex flex-col items-center justify-center h-full">
+              <h1 class="text-[54px] font-bold mb-4">Turn Any PDF Into<br>Eye-Friendly Dark Mode</h1>
+              <div class="w-full max-w-2xl h-[200px] border border-white/10 border-dashed rounded-2xl flex flex-col items-center justify-center mt-10">
+                <svg class="w-12 h-12 text-zinc-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <div class="text-zinc-400 font-semibold">Drop PDF here</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">05</div>
+    <div class="absolute top-[60px] right-[100px] flex items-center gap-2.5 text-white/60 font-medium text-[20px] tracking-wide z-20">
+      <svg class="w-[22px] h-[22px] opacity-80" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      TheShivaji
+    </div>
+  </div>
+
+  <!-- SLIDE 6 -->
+  <div class="slide">
+    <div class="content-wrapper">
+      <h2 class="text-[80px] leading-[1.1] font-bold text-white mb-24 mt-10">What makes it<br>different?</h2>
+      
+      <div class="flex flex-col gap-6 w-full max-w-[800px]">
+        
+        <div class="flex items-center gap-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8">
+          <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-2xl shrink-0">✓</div>
+          <div>
+            <h3 class="text-[28px] font-semibold text-white mb-1">100% Local Processing</h3>
+            <p class="text-[20px] text-zinc-400 font-light">Everything happens securely in your browser.</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8">
+          <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-2xl shrink-0">✓</div>
+          <div>
+            <h3 class="text-[28px] font-semibold text-white mb-1">Eye-Friendly Themes</h3>
+            <p class="text-[20px] text-zinc-400 font-light">AMOLED, Sepia, and custom color presets.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8">
+          <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-2xl shrink-0">✓</div>
+          <div>
+            <h3 class="text-[28px] font-semibold text-white mb-1">Dark PDF Export</h3>
+            <p class="text-[20px] text-zinc-400 font-light">Save the transformed document permanently.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8">
+          <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-2xl shrink-0">✓</div>
+          <div>
+            <h3 class="text-[28px] font-semibold text-white mb-1">Works Offline</h3>
+            <p class="text-[20px] text-zinc-400 font-light">No internet connection required after first load.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="slide-number">06</div>
+    <div class="absolute top-[60px] right-[100px] flex items-center gap-2.5 text-white/60 font-medium text-[20px] tracking-wide z-20">
+      <svg class="w-[22px] h-[22px] opacity-80" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      TheShivaji
+    </div>
+  </div>
+
+  <!-- SLIDE 7 -->
+  <div class="slide">
+    <div class="glow-top"></div>
+    <div class="content-wrapper items-center justify-center relative">
+      <div class="absolute top-[120px] left-[100px] right-[100px] flex justify-between items-end mb-16 z-20">
+        <h2 class="text-[80px] leading-[1.1] font-bold text-white">Before vs After</h2>
+        <p class="text-[32px] text-zinc-400 font-light pb-4">See the transformation.</p>
+      </div>
+
+      <div class="w-full flex gap-8 h-[650px] mt-[100px]">
+        <!-- Before -->
+        <div class="flex-1 bg-white rounded-2xl p-12 shadow-[0_0_50px_rgba(255,255,255,0.1)] flex flex-col relative overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-12 bg-zinc-100 flex items-center px-6 text-zinc-500 font-semibold text-sm border-b border-zinc-200">Original White PDF</div>
+          <div class="mt-12 flex flex-col gap-6 w-full">
+            <div class="h-8 w-[80%] bg-zinc-200 rounded"></div>
+            <div class="h-4 w-full bg-zinc-100 rounded"></div>
+            <div class="h-4 w-full bg-zinc-100 rounded"></div>
+            <div class="h-4 w-[90%] bg-zinc-100 rounded"></div>
+            <div class="h-32 w-full bg-zinc-100 rounded mt-6 border border-zinc-200"></div>
+          </div>
+        </div>
+        <!-- After -->
+        <div class="flex-1 bg-black rounded-2xl p-12 border border-white/10 shadow-[0_0_80px_rgba(255,255,255,0.05)] flex flex-col relative overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-12 bg-[#0a0a0c] flex items-center px-6 text-zinc-400 font-semibold text-sm border-b border-white/10">NightPDF AMOLED</div>
+          <div class="mt-12 flex flex-col gap-6 w-full">
+            <div class="h-8 w-[80%] bg-zinc-700 rounded"></div>
+            <div class="h-4 w-full bg-zinc-800 rounded"></div>
+            <div class="h-4 w-full bg-zinc-800 rounded"></div>
+            <div class="h-4 w-[90%] bg-zinc-800 rounded"></div>
+            <div class="h-32 w-full bg-[#111] rounded mt-6 border border-white/5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">07</div>
+    <div class="absolute top-[60px] right-[100px] flex items-center gap-2.5 text-white/60 font-medium text-[20px] tracking-wide z-20">
+      <svg class="w-[22px] h-[22px] opacity-80" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      TheShivaji
+    </div>
+  </div>
+
+  <!-- SLIDE 8 -->
+  <div class="slide">
+    <div class="grid-bg"></div>
+    <div class="content-wrapper justify-center items-center text-center">
+      <h2 class="text-[80px] leading-[1.1] font-bold text-white mb-10">Built from a<br>real problem.</h2>
+      <p class="text-[36px] text-zinc-400 font-light mb-10 max-w-[800px] leading-relaxed">
+        Sometimes the best product ideas come from problems you personally face.
+      </p>
+      <p class="text-[30px] text-zinc-500 font-light mb-24 max-w-[800px]">
+        NightPDF is still evolving, and I'd love your feedback.
+      </p>
+
+      <a href="https://pdf.theshivaji.in" class="bg-white text-black font-bold text-[36px] px-16 py-8 rounded-full tracking-tight hover:scale-105 transition-transform shadow-[0_0_60px_rgba(255,255,255,0.2)]">
+        pdf.theshivaji.in
+      </a>
+
+      <div class="absolute bottom-16 left-0 right-0 flex justify-center items-center gap-4 text-[24px] text-zinc-500 font-medium tracking-wide">
+        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        Built in Public by Shivaji Jagdale
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

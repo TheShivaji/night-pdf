@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NightPDF Brand Redesign V2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; font-family: 'Outfit', sans-serif; margin: 0; padding: 40px; }
+    h1 { text-align: center; margin-bottom: 60px; font-weight: 800; font-size: 36px; }
+    .concept { border: 1px solid #27272a; border-radius: 24px; padding: 40px; margin-bottom: 40px; background: #09090b; }
+    .concept-header { margin-bottom: 30px; }
+    .concept-header h2 { margin: 0 0 10px 0; font-size: 28px; color: #fff; }
+    .concept-header p { margin: 0; color: #a1a1aa; font-size: 16px; line-height: 1.5; }
+    
+    .previews { display: flex; gap: 40px; flex-wrap: wrap; }
+    .preview-box { background: #000; border: 1px solid #18181b; border-radius: 16px; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; flex: 1; min-width: 200px; }
+    .preview-box .label { font-size: 13px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    
+    /* Navbar Preview */
+    .navbar { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 22px; }
+    
+    /* Favicon sizes */
+    .favicon-group { display: flex; gap: 20px; align-items: flex-end; }
+    .favicon { border: 1px dashed #333; }
+  </style>
+</head>
+<body>
+
+  <h1>NightPDF Logo Concepts V2</h1>
+
+  <!-- CONCEPT A -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Concept A: The Crescent Cutout</h2>
+      <p>A literal interpretation. A minimalist document shape where a crescent moon is punched out of the center, revealing the dark void behind it. Clean reading lines are embossed below it. Highly geometric and timeless.</p>
+    </div>
+    
+    <div class="previews">
+      <!-- Icon Only -->
+      <div class="preview-box">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <mask id="c1-mask">
+              <rect width="24" height="24" fill="white"/>
+              <!-- Crescent punch -->
+              <circle cx="12" cy="10" r="4.5" fill="black"/>
+              <circle cx="13.5" cy="8.5" r="4.5" fill="white"/>
+            </mask>
+          </defs>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#ffffff" mask="url(#c1-mask)"/>
+          <path d="M14 2v4a2 2 0 0 0 2 2h4" fill="none" stroke="#000000" stroke-width="2"/>
+          <line x1="8" y1="16" x2="16" y2="16" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="8" y1="19" x2="13" y2="19" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="label">Icon Only</span>
+      </div>
+
+      <!-- Navbar -->
+      <div class="preview-box">
+        <div class="navbar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <use href="#c1-def"></use>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#ffffff" mask="url(#c1-mask)"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" fill="none" stroke="#000000" stroke-width="2"/>
+            <line x1="8" y1="16" x2="16" y2="16" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="8" y1="19" x2="13" y2="19" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          NightPDF
+        </div>
+        <span class="label">Navbar</span>
+      </div>
+
+      <!-- Favicons -->
+      <div class="preview-box">
+        <div class="favicon-group">
+          <svg class="favicon" width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#ffffff" mask="url(#c1-mask)"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" fill="none" stroke="#000000" stroke-width="2"/>
+            <line x1="8" y1="16" x2="16" y2="16" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="8" y1="19" x2="13" y2="19" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <svg class="favicon" width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#ffffff" mask="url(#c1-mask)"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" fill="none" stroke="#000000" stroke-width="2"/>
+            <line x1="8" y1="16" x2="16" y2="16" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="8" y1="19" x2="13" y2="19" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <svg class="favicon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#ffffff" mask="url(#c1-mask)"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" fill="none" stroke="#000000" stroke-width="2"/>
+            <line x1="8" y1="16" x2="16" y2="16" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="8" y1="19" x2="13" y2="19" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="label">48x / 32x / 16x</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCEPT B -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Concept B: The Golden Fold</h2>
+      <p>A pure dark document with reading lines, where the standard folded corner of a PDF icon has literally become a glowing golden crescent moon. It combines the PDF fold and the night reading theme directly.</p>
+    </div>
+    
+    <div class="previews">
+      <!-- Icon Only -->
+      <div class="preview-box">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a6 6 0 0 0-6-6z" fill="#18181b" stroke="#ffffff" stroke-width="1.5"/>
+          <line x1="8" y1="11" x2="16" y2="11" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="8" y1="15" x2="16" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="8" y1="19" x2="12" y2="19" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <defs>
+            <mask id="c2-moon">
+              <circle cx="16.5" cy="5.5" r="4" fill="white"/>
+              <circle cx="17.5" cy="4.5" r="4" fill="black"/>
+            </mask>
+          </defs>
+          <circle cx="16.5" cy="5.5" r="4" fill="#F6C26B" mask="url(#c2-moon)"/>
+        </svg>
+        <span class="label">Icon Only</span>
+      </div>
+
+      <!-- Navbar -->
+      <div class="preview-box">
+        <div class="navbar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a6 6 0 0 0-6-6z" fill="#18181b" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="8" y1="11" x2="16" y2="11" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="15" x2="16" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="19" x2="12" y2="19" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="16.5" cy="5.5" r="4" fill="#F6C26B" mask="url(#c2-moon)"/>
+          </svg>
+          NightPDF
+        </div>
+        <span class="label">Navbar</span>
+      </div>
+
+      <!-- Favicons -->
+      <div class="preview-box">
+        <div class="favicon-group">
+          <svg class="favicon" width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a6 6 0 0 0-6-6z" fill="#18181b" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="8" y1="11" x2="16" y2="11" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="15" x2="16" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="19" x2="12" y2="19" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="16.5" cy="5.5" r="4" fill="#F6C26B" mask="url(#c2-moon)"/>
+          </svg>
+          <svg class="favicon" width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a6 6 0 0 0-6-6z" fill="#18181b" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="8" y1="11" x2="16" y2="11" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="15" x2="16" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="19" x2="12" y2="19" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="16.5" cy="5.5" r="4" fill="#F6C26B" mask="url(#c2-moon)"/>
+          </svg>
+          <svg class="favicon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a6 6 0 0 0-6-6z" fill="#18181b" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="8" y1="11" x2="16" y2="11" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="15" x2="16" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <line x1="8" y1="19" x2="12" y2="19" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="16.5" cy="5.5" r="4" fill="#F6C26B" mask="url(#c2-moon)"/>
+          </svg>
+        </div>
+        <span class="label">48x / 32x / 16x</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCEPT C -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Concept C: The Night Transformation</h2>
+      <p>A document divided diagonally. The top-left represents bright daylight, while the bottom-right transitions into deep dark mode. In the center, a golden moon anchors the transformation, communicating the exact value proposition of NightPDF.</p>
+    </div>
+    
+    <div class="previews">
+      <!-- Icon Only -->
+      <div class="preview-box">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <clipPath id="doc-clip">
+              <rect x="5" y="2" width="14" height="20" rx="2" />
+            </clipPath>
+          </defs>
+          <rect x="5" y="2" width="14" height="20" rx="2" fill="#ffffff" />
+          <polygon points="5,22 24,10 24,24" fill="#18181b" clip-path="url(#doc-clip)" />
+          <rect x="5" y="2" width="14" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="1.5" />
+          <defs>
+            <mask id="c3-moon">
+              <circle cx="12" cy="12" r="4.5" fill="white"/>
+              <circle cx="13.5" cy="10.5" r="4.5" fill="black"/>
+            </mask>
+          </defs>
+          <circle cx="12" cy="12" r="4.5" fill="#F6C26B" mask="url(#c3-moon)"/>
+        </svg>
+        <span class="label">Icon Only</span>
+      </div>
+
+      <!-- Navbar -->
+      <div class="preview-box">
+        <div class="navbar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="#ffffff" />
+            <polygon points="5,22 24,10 24,24" fill="#18181b" clip-path="url(#doc-clip)" />
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="1.5" />
+            <circle cx="12" cy="12" r="4.5" fill="#F6C26B" mask="url(#c3-moon)"/>
+          </svg>
+          NightPDF
+        </div>
+        <span class="label">Navbar</span>
+      </div>
+
+      <!-- Favicons -->
+      <div class="preview-box">
+        <div class="favicon-group">
+          <svg class="favicon" width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="#ffffff" />
+            <polygon points="5,22 24,10 24,24" fill="#18181b" clip-path="url(#doc-clip)" />
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="1.5" />
+            <circle cx="12" cy="12" r="4.5" fill="#F6C26B" mask="url(#c3-moon)"/>
+          </svg>
+          <svg class="favicon" width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="#ffffff" />
+            <polygon points="5,22 24,10 24,24" fill="#18181b" clip-path="url(#doc-clip)" />
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="1.5" />
+            <circle cx="12" cy="12" r="4.5" fill="#F6C26B" mask="url(#c3-moon)"/>
+          </svg>
+          <svg class="favicon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="#ffffff" />
+            <polygon points="5,22 24,10 24,24" fill="#18181b" clip-path="url(#doc-clip)" />
+            <rect x="5" y="2" width="14" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="1.5" />
+            <circle cx="12" cy="12" r="4.5" fill="#F6C26B" mask="url(#c3-moon)"/>
+          </svg>
+        </div>
+        <span class="label">48x / 32x / 16x</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

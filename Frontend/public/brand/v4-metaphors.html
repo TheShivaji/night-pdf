@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NightPDF Brand Discovery (V4 Metaphors)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; font-family: 'Outfit', sans-serif; margin: 0; padding: 40px; }
+    h1 { text-align: center; margin-bottom: 20px; font-weight: 800; font-size: 36px; }
+    .subtitle { text-align: center; color: #a1a1aa; margin-bottom: 60px; font-size: 18px; max-width: 600px; margin-left: auto; margin-right: auto;}
+    .concept { border: 1px solid #27272a; border-radius: 24px; padding: 40px; margin-bottom: 40px; background: #09090b; }
+    .concept-header { margin-bottom: 30px; }
+    .concept-header h2 { margin: 0 0 10px 0; font-size: 28px; color: #fff; }
+    .concept-header p { margin: 0; color: #a1a1aa; font-size: 16px; line-height: 1.5; }
+    
+    .previews { display: flex; gap: 40px; flex-wrap: wrap; }
+    .preview-box { background: #000; border: 1px solid #18181b; border-radius: 16px; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; flex: 1; min-width: 200px; }
+    .preview-box .label { font-size: 13px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    
+    /* Navbar Preview */
+    .navbar { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 22px; }
+    
+    /* Favicon sizes */
+    .favicon-group { display: flex; gap: 20px; align-items: flex-end; }
+    .favicon { border: 1px dashed #333; }
+  </style>
+</head>
+<body>
+
+  <h1>NightPDF Brand Metaphors</h1>
+  <div class="subtitle">Abandoning the descriptive (PDF/Moon/Letter). Focusing purely on 100M+ SaaS memorability, contrast, and visual metaphor.</div>
+
+  <!-- METAPHOR 1 -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Metaphor 1: The Eclipse Diamond</h2>
+      <p>A pure white geometric diamond completely eclipsed by a dark offset diamond, leaving only a glowing `<` chevron edge. It represents the exact moment harsh white light is blocked out by a dark mode overlay. Timeless, bold, and scalable.</p>
+    </div>
+    <div class="previews">
+      <div class="preview-box">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <mask id="diamond-eclipse">
+              <rect width="24" height="24" fill="white"/>
+              <rect x="16" y="2" width="14" height="14" transform="rotate(45 16 2)" fill="black"/>
+            </mask>
+          </defs>
+          <rect x="12" y="2" width="14" height="14" transform="rotate(45 12 2)" fill="#ffffff" mask="url(#diamond-eclipse)"/>
+          <circle cx="15.5" cy="12" r="2.5" fill="#F6C26B"/>
+        </svg>
+        <span class="label">Icon Only</span>
+      </div>
+      <div class="preview-box">
+        <div class="navbar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <rect x="12" y="2" width="14" height="14" transform="rotate(45 12 2)" fill="#ffffff" mask="url(#diamond-eclipse)"/>
+            <circle cx="15.5" cy="12" r="2.5" fill="#F6C26B"/>
+          </svg>
+          NightPDF
+        </div>
+        <span class="label">Navbar</span>
+      </div>
+      <div class="preview-box">
+        <div class="favicon-group">
+          <svg class="favicon" width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <rect x="12" y="2" width="14" height="14" transform="rotate(45 12 2)" fill="#ffffff" mask="url(#diamond-eclipse)"/>
+            <circle cx="15.5" cy="12" r="2.5" fill="#F6C26B"/>
+          </svg>
+          <svg class="favicon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="12" y="2" width="14" height="14" transform="rotate(45 12 2)" fill="#ffffff" mask="url(#diamond-eclipse)"/>
+            <circle cx="15.5" cy="12" r="2.5" fill="#F6C26B"/>
+          </svg>
+        </div>
+        <span class="label">48x / 16x</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- METAPHOR 2 -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Metaphor 2: The Reading Visor</h2>
+      <p>A sleek, horizontal pill shape with a perfect concave arc removed from the bottom. It immediately suggests eye protection, focus visors, and a sanctuary from bright screens. Extremely memorable silhouette.</p>
+    </div>
+    <div class="previews">
+      <div class="preview-box">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <mask id="visor-cut">
+              <rect width="24" height="24" fill="white"/>
+              <circle cx="12" cy="25" r="10" fill="black"/>
+            </mask>
+          </defs>
+          <rect x="2" y="6" width="20" height="12" rx="6" fill="#F6C26B" mask="url(#visor-cut)"/>
+          <circle cx="12" cy="10" r="2" fill="#000000"/>
+        </svg>
+        <span class="label">Icon Only</span>
+      </div>
+      <div class="preview-box">
+        <div class="navbar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="6" width="20" height="12" rx="6" fill="#F6C26B" mask="url(#visor-cut)"/>
+            <circle cx="12" cy="10" r="2" fill="#000000"/>
+          </svg>
+          NightPDF
+        </div>
+        <span class="label">Navbar</span>
+      </div>
+      <div class="preview-box">
+        <div class="favicon-group">
+          <svg class="favicon" width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="6" width="20" height="12" rx="6" fill="#F6C26B" mask="url(#visor-cut)"/>
+            <circle cx="12" cy="10" r="2" fill="#000000"/>
+          </svg>
+          <svg class="favicon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="6" width="20" height="12" rx="6" fill="#F6C26B" mask="url(#visor-cut)"/>
+          </svg>
+        </div>
+        <span class="label">48x / 16x</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- METAPHOR 3 -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Metaphor 3: The Portal Archway</h2>
+      <p>A solid, massive arch structure. Passing through an archway has universally symbolized entering a new, protected space. Here, it represents the sanctuary of dark mode reading. Simple, bold, and trustworthy.</p>
+    </div>
+    <div class="previews">
+      <div class="preview-box">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+          <path d="M 4 22 V 12 A 8 8 0 0 1 20 12 V 22" fill="#18181b" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="12" cy="11" r="3" fill="#F6C26B"/>
+        </svg>
+        <span class="label">Icon Only</span>
+      </div>
+      <div class="preview-box">
+        <div class="navbar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M 4 22 V 12 A 8 8 0 0 1 20 12 V 22" fill="#18181b" stroke="#ffffff" stroke-width="2"/>
+            <circle cx="12" cy="11" r="3" fill="#F6C26B"/>
+          </svg>
+          NightPDF
+        </div>
+        <span class="label">Navbar</span>
+      </div>
+      <div class="preview-box">
+        <div class="favicon-group">
+          <svg class="favicon" width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M 4 22 V 12 A 8 8 0 0 1 20 12 V 22" fill="#18181b" stroke="#ffffff" stroke-width="2"/>
+            <circle cx="12" cy="11" r="3" fill="#F6C26B"/>
+          </svg>
+          <svg class="favicon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M 4 22 V 12 A 8 8 0 0 1 20 12 V 22" fill="#18181b" stroke="#ffffff" stroke-width="2"/>
+            <circle cx="12" cy="11" r="3" fill="#F6C26B"/>
+          </svg>
+        </div>
+        <span class="label">48x / 16x</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

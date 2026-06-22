@@ -46,8 +46,8 @@ export default function Navbar() {
               className="group flex items-center gap-2.5 shrink-0"
               aria-label="Night PDF Home"
             >
-              <span className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.07] border border-white/10 text-lg shadow-inner group-hover:bg-white/10 transition-colors duration-200">
-                🌙
+              <span className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.07] border border-white/10 shadow-inner group-hover:bg-white/10 transition-colors duration-200">
+                <img src="/logo-icon.svg" alt="NightPDF Logo" className="w-5 h-5 text-white" style={{ filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.2))' }} />
                 <span className="absolute inset-0 rounded-xl ring-1 ring-white/5" />
               </span>
               <span

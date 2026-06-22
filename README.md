@@ -166,3 +166,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 *Built for students, researchers, developers, and anyone who reads PDFs late into the night.*
+
+## License
+
+NightPDF is source-available software.
+
+You may view, learn from, and modify the code for personal or educational purposes.
+
+Commercial use, redistribution, and rebranding are prohibited.
+
+See LICENSE.md for full details.
+

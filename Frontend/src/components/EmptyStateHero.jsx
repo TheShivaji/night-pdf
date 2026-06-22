@@ -1,9 +1,41 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import UploadZone from './UploadZone';
-import InteractiveDemo from './InteractiveDemo';
-
 import { Clock, Play } from 'lucide-react';
+
+const HeroVideo = () => {
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="w-full max-w-[1100px] mx-auto mb-16 relative rounded-2xl overflow-hidden border border-zinc-800/80 bg-zinc-950 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]"
+      style={{ aspectRatio: '1920/1080' }}
+    >
+      {/* Lightweight skeleton placeholder */}
+      <div 
+        className={`absolute inset-0 bg-zinc-900/50 transition-opacity duration-700 ease-in-out ${isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        style={{ transform: 'scale(1.68)' }}
+      />
+      
+      <video
+        className={`w-full h-auto block transition-opacity duration-700 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        style={{ transform: 'scale(1.68)' }}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        onCanPlay={() => setIsLoaded(true)}
+      >
+        <source src="/hero-demo.webm" type="video/webm" />
+        <source src="/hero-demo.mp4" type="video/mp4" />
+      </video>
+    </motion.div>
+  );
+};
 
 export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, onResumeSession }) {
   const lastSession = recentFiles && recentFiles.length > 0 ? recentFiles[0] : null;
@@ -33,13 +65,16 @@ export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, 
           <p className="text-zinc-500">All processing happens locally in your browser.</p>
         </motion.div>
 
+        {/* Hero Video */}
+        <HeroVideo />
+
         {/* Resume Session Card */}
         {lastSession && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.12 }}
-            className="w-full max-w-xl mx-auto mb-8 bg-[#111113] border border-white/10 rounded-2xl p-5 text-left flex items-center justify-between cursor-pointer hover:border-white/20 transition-all shadow-xl"
+            className="w-full max-w-xl mx-auto mb-6 bg-[#111113] border border-white/10 rounded-2xl p-5 text-left flex items-center justify-between cursor-pointer hover:border-white/20 transition-all shadow-xl"
             onClick={() => onResumeSession(lastSession)}
           >
             <div className="flex items-center gap-4 overflow-hidden">
@@ -64,31 +99,9 @@ export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="w-full max-w-xl mx-auto mb-6"
+          className="w-full max-w-xl mx-auto mb-10"
         >
           <UploadZone onFileSelected={onFileSelected} errorMsg={errorMsg} />
-        </motion.div>
-
-        {/* Built For Strip */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center text-[13px] font-medium tracking-wide text-zinc-500 mb-16"
-        >
-          Built for Students • Researchers • Developers • Readers
-        </motion.div>
-
-        {/* Interactive Demo (Premium Container) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="w-full max-w-6xl mx-auto mb-24 rounded-xl md:rounded-[32px] overflow-hidden md:p-2 bg-transparent md:bg-white/[0.01] shadow-none md:shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_80px_rgba(255,255,255,0.03)]"
-        >
-          <div className="rounded-xl md:rounded-3xl overflow-hidden w-full h-full">
-            <InteractiveDemo />
-          </div>
         </motion.div>
 
         {/* Trust Bar */}
