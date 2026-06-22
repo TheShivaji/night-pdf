@@ -9,7 +9,7 @@ NightPDF is a privacy-first reading platform that converts bright PDFs into opti
 ## Product Preview
 
 <div align="center">
-  <img src="Frontend/public/og-image.png" alt="NightPDF Interface Demo" width="100%" style="border-radius: 12px; border: 1px solid #27272a;" />
+  <video src="Frontend/public/hero-demo.mp4" autoplay loop muted playsinline width="100%" style="border-radius: 12px; border: 1px solid #27272a;"></video>
   <p><em>From harsh white to absolute black in milliseconds.</em></p>
 </div>
 
@@ -97,7 +97,7 @@ To run NightPDF locally for development or contribution:
 
 ```bash
 # Clone the repository
-git clone https://github.com/username/nightpdf.git
+git clone https://github.com/TheShivaji/night-pdf.git
 
 # Navigate to the frontend directory
 cd nightpdf/Frontend
@@ -159,21 +159,16 @@ NightPDF is evolving from a single utility into a comprehensive reading platform
 
 We welcome contributions from the community. Whether it's a new feature, a bug fix, or a documentation improvement, please feel free to open an issue or submit a pull request.
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ---
 
 *Built for students, researchers, developers, and anyone who reads PDFs late into the night.*
 
 ## License
 
-NightPDF is source-available software.
+NightPDF is **source-available software**.
 
 You may view, learn from, and modify the code for personal or educational purposes.
 
 Commercial use, redistribution, and rebranding are prohibited.
 
-See LICENSE.md for full details.
-
+See [LICENSE.md](LICENSE.md) for full details.
