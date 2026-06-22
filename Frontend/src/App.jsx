@@ -29,10 +29,11 @@ function ReaderWorkspace() {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [zoom, setZoom] = useState(1.0);
+  const [zoomMode, setZoomMode] = useState(() => loadSetting('zoomMode', 'fit-width'));
+  const [zoom, setZoom] = useState(() => loadSetting('zoom', 1.0));
 
   // Configuration States
-  const loadSetting = (key, defaultVal) => {
+  function loadSetting(key, defaultVal) {
     try {
       const stored = localStorage.getItem('nightpdf_settings');
       if (stored) {
@@ -40,7 +41,8 @@ function ReaderWorkspace() {
         if (parsed[key] !== undefined) return parsed[key];
       }
     } catch (e) {}
-    return defaultVal;
+    // Additional safety wrapper for defaultVal execution if it's a function
+    return typeof defaultVal === 'function' ? defaultVal() : defaultVal;
   };
 
   const [selectedTheme, setSelectedTheme] = useState(() => loadSetting('selectedTheme', 'dark'));
@@ -56,14 +58,6 @@ function ReaderWorkspace() {
   const [contrast, setContrast] = useState(() => loadSetting('contrast', 0)); 
   const [boldness, setBoldness] = useState(() => loadSetting('boldness', 0)); 
 
-  // Save Settings
-  useEffect(() => {
-    try {
-      localStorage.setItem('nightpdf_settings', JSON.stringify({
-        selectedTheme, mode, brightness, contrast, boldness
-      }));
-    } catch (e) {}
-  }, [selectedTheme, mode, brightness, contrast, boldness]);
 
   // Download settings
   const [downloadMode, setDownloadMode] = useState('all'); // 'all' | 'range'
@@ -71,16 +65,26 @@ function ReaderWorkspace() {
 
   // Book & Fullscreen view modes
   const [isBookMode, setIsBookMode] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(() => loadSetting('isFullscreen', false));
 
   // UI Flow States
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => loadSetting('isSidebarOpen', window.innerWidth > 768));
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [recentFiles, setRecentFiles] = useState([]);
   const [outline, setOutline] = useState([]);
+
+  // Save Settings
+  useEffect(() => {
+    try {
+      localStorage.setItem('nightpdf_settings', JSON.stringify({
+        selectedTheme, mode, brightness, contrast, boldness,
+        zoomMode, zoom, isSidebarOpen, isFullscreen
+      }));
+    } catch (e) {}
+  }, [selectedTheme, mode, brightness, contrast, boldness, zoomMode, zoom, isSidebarOpen, isFullscreen]);
 
   // 1. Register PWA Service Worker on mount & Load Recent Files
   useEffect(() => {
@@ -382,6 +386,8 @@ function ReaderWorkspace() {
             setCurrentPage={setCurrentPage}
             zoom={zoom}
             setZoom={setZoom}
+            zoomMode={zoomMode}
+            setZoomMode={setZoomMode}
             selectedTheme={selectedTheme}
             setSelectedTheme={setSelectedTheme}
             customTheme={customTheme}

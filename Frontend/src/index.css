@@ -482,7 +482,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Preview Toolbar (Minimal Clean Black) */
-.preview-toolbar {
+.toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 60px;
   background: #09090b;
   border-bottom: 1px solid var(--border-light);
@@ -490,7 +494,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  z-index: 5;
+  z-index: 50;
 }
 
 .toolbar-info {
@@ -657,33 +661,53 @@ h1, h2, h3, h4, h5, h6 {
     width: 85%;
     max-width: 330px;
   }
+  .toolbar {
+    height: 56px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    gap: 0;
+    overflow-x: visible;
+    position: absolute; /* Using absolute so dynamic padding-top handles spacing perfectly */
+    width: 100%;
+    top: env(safe-area-inset-top, 0);
+    z-index: 50;
+  }
   
-  .preview-toolbar {
-    height: auto;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 8px 12px;
-    gap: 8px;
+  .toolbar-info, .toolbar-controls {
+    gap: 0;
   }
   
   .toolbar-info {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
-    width: 100%;
+    width: auto;
+    flex-shrink: 0;
   }
   
   .toolbar-controls {
     display: flex;
-    justify-content: space-between;
-    width: 100%;
-    border-top: 1px solid var(--border-light);
-    padding-top: 8px;
-    gap: 4px;
+    justify-content: flex-start;
+    align-items: center;
+    width: auto;
+    border-top: none;
+    padding-top: 0;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .toolbar-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
   }
   
   .viewer-panel {
-    padding: 8px 4px; /* Minimize padding to maximize PDF canvas viewing size on mobile */
+    padding: 0; /* Minimize padding to maximize PDF canvas viewing size on mobile */
+    padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px);
     width: 100vw;
   }
   

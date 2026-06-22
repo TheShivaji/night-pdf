@@ -19,6 +19,29 @@ export function openDB() {
 export async function saveRecentFile(file, totalPages, currentPage) {
   try {
     const db = await openDB();
+    
+    // Quota Protection: Retain only the 5 most recent files
+    const allFiles = await new Promise((resolve) => {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const req = store.getAllKeys();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve([]); // ignore error, just don't delete
+    });
+    
+    if (allFiles && allFiles.length >= 5) {
+      // Find oldest to delete
+      const records = await getRecentFiles(); // Already sorted by lastReadTime desc
+      if (records.length >= 5) {
+        const oldestFiles = records.slice(4); // Keep top 4, so we can insert 1
+        const delTransaction = db.transaction([STORE_NAME], 'readwrite');
+        const delStore = delTransaction.objectStore(STORE_NAME);
+        for (const oldFile of oldestFiles) {
+          delStore.delete(oldFile.id);
+        }
+      }
+    }
+
     const id = `${file.name}-${file.size}`;
     const arrayBuffer = await file.arrayBuffer();
     
@@ -40,8 +63,8 @@ export async function saveRecentFile(file, totalPages, currentPage) {
       request.onerror = (event) => reject(event.target.error);
     });
   } catch (error) {
-    console.error('Failed to save to IndexedDB, using localStorage fallback:', error);
-    // Fallback: save metadata to localStorage if full or private browsing
+    console.warn('IndexedDB Quota or Save Error. Disabling binary resume for this file.', error);
+    // Silent fallback: just save metadata so history still works without the binary
     saveMetadataToLocalStorage(file.name, file.size, totalPages, currentPage);
   }
 }

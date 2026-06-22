@@ -17,7 +17,6 @@ import { applyThemeToImageData, THEME_PRESETS } from '../utils/themeEngine';
 import { applyBoldingToCanvas } from '../utils/pdfProcessor';
 import ShortcutsModal from './ShortcutsModal';
 
-// Helper component for Lazy Rendering a Single Page in Continuous Scroll / Book Mode
 function PDFPageCanvas({ 
   pdfDoc, 
   pageNum, 
@@ -44,36 +43,33 @@ function PDFPageCanvas({
       const viewport = page.getViewport({ scale: 1.0 });
       setDimensions({ width: viewport.width, height: viewport.height });
     });
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [pdfDoc, pageNum]);
 
-  // 2. Setup intersection observer for lazy loading
+  // 2. Setup intersection observer for memory-safe lazy loading
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+        setIsVisible(entry.isIntersecting);
       },
-      { rootMargin: '400px' } // Load pages 400px ahead
+      { rootMargin: '2000px 0px' } // Load pages 2000px ahead, unload when far away
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    const currentContainer = containerRef.current;
+    if (currentContainer) {
+      observer.observe(currentContainer);
     }
 
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (currentContainer) {
+        observer.unobserve(currentContainer);
       }
     };
   }, []);
 
-  // 3. Render page and text layer when visible
+  // 3. Render page (Double-buffered for no-flash, Retina DPR scaled)
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible || !canvasRef.current) return;
 
     let active = true;
 
@@ -83,19 +79,23 @@ function PDFPageCanvas({
         if (!active) return;
 
         const viewport = page.getViewport({ scale: zoom });
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2.5); // Cap at 2.5x for memory
+        
+        // Use detached offscreen canvas to prevent white flash during re-render
+        const offscreenCanvas = document.createElement('canvas');
+        const offCtx = offscreenCanvas.getContext('2d');
+        offscreenCanvas.width = viewport.width * dpr;
+        offscreenCanvas.height = viewport.height * dpr;
 
-        const ctx = canvas.getContext('2d');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        // Scale context for Retina
+        offCtx.scale(dpr, dpr);
 
         if (renderTaskRef.current) {
           renderTaskRef.current.cancel();
         }
 
         const renderContext = {
-          canvasContext: ctx,
+          canvasContext: offCtx,
           viewport: viewport,
         };
 
@@ -103,34 +103,46 @@ function PDFPageCanvas({
         renderTaskRef.current = renderTask;
 
         await renderTask.promise;
-
         if (!active) return;
 
-        // Apply text bolding (dilation) on original page render if specified
+        // Apply filters directly to the offscreen canvas
         if (boldness > 0) {
-          applyBoldingToCanvas(canvas, boldness);
+          applyBoldingToCanvas(offscreenCanvas, boldness);
         }
 
-        // Apply theme/contrast/brightness adjustments
         const isNormal = selectedTheme === 'normal';
         const hasAdjustments = brightness !== 0 || contrast !== 0;
 
         if (!isNormal || hasAdjustments || mode === 'original') {
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          // Note: getImageData on Retina canvases is large, process full bounds
+          const imgData = offCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
           applyThemeToImageData(imgData, selectedTheme, { 
             mode, 
             brightness, 
             contrast,
             customTheme 
           });
-          ctx.putImageData(imgData, 0, 0);
+          offCtx.putImageData(imgData, 0, 0);
         }
 
-        // Render Text Layer for copy-paste & native search selection
+        // Now swap the fully rendered buffer into the visible canvas
+        const visibleCanvas = canvasRef.current;
+        if (visibleCanvas && active) {
+          visibleCanvas.width = offscreenCanvas.width;
+          visibleCanvas.height = offscreenCanvas.height;
+          visibleCanvas.style.width = `${viewport.width}px`;
+          visibleCanvas.style.height = `${viewport.height}px`;
+          const visibleCtx = visibleCanvas.getContext('2d');
+          visibleCtx.drawImage(offscreenCanvas, 0, 0);
+        }
+
+        // Render Text Layer
         const textContent = await page.getTextContent();
         const textLayerDiv = textLayerRef.current;
-        if (textLayerDiv) {
+        if (textLayerDiv && active) {
           textLayerDiv.innerHTML = '';
+          textLayerDiv.style.width = `${viewport.width}px`;
+          textLayerDiv.style.height = `${viewport.height}px`;
           const textLayer = new pdfjsLib.TextLayer({
             textContentSource: textContent,
             container: textLayerDiv,
@@ -160,11 +172,11 @@ function PDFPageCanvas({
       ref={containerRef} 
       className="canvas-wrapper"
       style={{ 
-        width: '100%',
-        maxWidth: `${dimensions.width * zoom}px`,
+        width: `${dimensions.width * zoom}px`,
         aspectRatio: `${dimensions.width} / ${dimensions.height}`,
         marginBottom: '20px',
-        position: 'relative'
+        position: 'relative',
+        margin: '0 auto 20px auto'
       }}
     >
       {isVisible ? (
@@ -197,6 +209,8 @@ export default function PDFViewer({
   setCurrentPage,
   zoom,
   setZoom,
+  zoomMode,
+  setZoomMode,
   selectedTheme,
   setSelectedTheme,
   customTheme,
@@ -208,11 +222,7 @@ export default function PDFViewer({
   setIsSidebarOpen,
   isMobile,
   isProcessing,
-  onFileSelected,
   clearFile,
-  errorMsg,
-  recentFiles,
-  onDeleteRecent,
   isBookMode,
   setIsBookMode,
   isFullscreen,
@@ -223,6 +233,83 @@ export default function PDFViewer({
   const singleCanvasRef = useRef(null);
   const singleTextLayerRef = useRef(null);
   const singleRenderTaskRef = useRef(null);
+  const [baseWidth, setBaseWidth] = useState(null);
+
+  const toolbarRef = useRef(null);
+  const containerRef = useRef(null);
+  const viewerPanelRef = useRef(null);
+
+  // Measure dynamic toolbar height to prevent overlap
+  useEffect(() => {
+    if (!toolbarRef.current || !containerRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const height = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
+        containerRef.current.style.setProperty('--toolbar-height', `${height}px`);
+      }
+    });
+    
+    observer.observe(toolbarRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // 1. Fetch unscaled PDF width on load
+  useEffect(() => {
+    if (pdfDoc) {
+      pdfDoc.getPage(1).then(page => {
+        const vp = page.getViewport({ scale: 1.0 });
+        setBaseWidth(vp.width);
+      });
+    }
+  }, [pdfDoc]);
+
+  // 2. Debounced Fit-to-Width & Safe Position Recalculation
+  useEffect(() => {
+    if (!isMobile || zoomMode !== 'fit-width' || !baseWidth) return;
+
+    let rAF;
+    const calculateMobileZoom = () => {
+      // Pause if tab is hidden
+      if (document.visibilityState === 'hidden') return;
+      
+      const containerWidth = viewerPanelRef.current ? viewerPanelRef.current.clientWidth : window.innerWidth;
+      const targetWidth = containerWidth - 16; // 8px padding per side
+      let newZoom = targetWidth / baseWidth;
+      
+      // Small PDF protection (max 2.0x scale)
+      newZoom = Math.min(newZoom, 2.0);
+      
+      // Position Preservation: Cache scroll ratio
+      const scrollRatio = window.scrollY / document.body.scrollHeight;
+      
+      setZoom(newZoom);
+      
+      // Restore position after render
+      setTimeout(() => {
+        window.scrollTo(0, scrollRatio * document.body.scrollHeight);
+      }, 50);
+    };
+
+    // Calculate immediately on load
+    calculateMobileZoom();
+
+    const handleResize = () => {
+      cancelAnimationFrame(rAF);
+      rAF = requestAnimationFrame(calculateMobileZoom);
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    document.addEventListener('visibilitychange', calculateMobileZoom);
+    
+    return () => {
+      cancelAnimationFrame(rAF);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      document.removeEventListener('visibilitychange', calculateMobileZoom);
+    };
+  }, [isMobile, zoomMode, baseWidth, setZoom]);
 
   // Sync HTML5 Fullscreen state change events
   useEffect(() => {
@@ -309,19 +396,20 @@ export default function PDFViewer({
         if (!active) return;
 
         const viewport = page.getViewport({ scale: zoom });
-        const canvas = singleCanvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2.5); // Retina cap
+        
+        const offscreenCanvas = document.createElement('canvas');
+        const offCtx = offscreenCanvas.getContext('2d');
+        offscreenCanvas.width = viewport.width * dpr;
+        offscreenCanvas.height = viewport.height * dpr;
+        offCtx.scale(dpr, dpr);
 
         if (singleRenderTaskRef.current) {
           singleRenderTaskRef.current.cancel();
         }
 
         const renderContext = {
-          canvasContext: ctx,
+          canvasContext: offCtx,
           viewport: viewport,
         };
 
@@ -329,34 +417,42 @@ export default function PDFViewer({
         singleRenderTaskRef.current = renderTask;
 
         await renderTask.promise;
-
         if (!active) return;
 
-        // Apply text bolding (dilation) on original page render if specified
         if (boldness > 0) {
-          applyBoldingToCanvas(canvas, boldness);
+          applyBoldingToCanvas(offscreenCanvas, boldness);
         }
 
-        // Apply theme/contrast/brightness adjustments
         const isNormal = selectedTheme === 'normal';
         const hasAdjustments = brightness !== 0 || contrast !== 0;
 
         if (!isNormal || hasAdjustments || mode === 'original') {
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const imgData = offCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
           applyThemeToImageData(imgData, selectedTheme, { 
             mode, 
             brightness, 
             contrast,
             customTheme
           });
-          ctx.putImageData(imgData, 0, 0);
+          offCtx.putImageData(imgData, 0, 0);
         }
 
-        // Render Text Layer in Single Page Mode
+        const visibleCanvas = singleCanvasRef.current;
+        if (visibleCanvas && active) {
+          visibleCanvas.width = offscreenCanvas.width;
+          visibleCanvas.height = offscreenCanvas.height;
+          visibleCanvas.style.width = `${viewport.width}px`;
+          visibleCanvas.style.height = `${viewport.height}px`;
+          const visibleCtx = visibleCanvas.getContext('2d');
+          visibleCtx.drawImage(offscreenCanvas, 0, 0);
+        }
+
         const textContent = await page.getTextContent();
         const textLayerDiv = singleTextLayerRef.current;
-        if (textLayerDiv) {
+        if (textLayerDiv && active) {
           textLayerDiv.innerHTML = '';
+          textLayerDiv.style.width = `${viewport.width}px`;
+          textLayerDiv.style.height = `${viewport.height}px`;
           const textLayer = new pdfjsLib.TextLayer({
             textContentSource: textContent,
             container: textLayerDiv,
@@ -412,16 +508,31 @@ export default function PDFViewer({
     return `Page ${currentPage} of ${numPages}`;
   };
 
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '0 KB';
-    return `${Math.round(bytes / 1024)} KB`;
+
+
+  const lastTapRef = useRef(0);
+  const handleDoubleTap = () => {
+    if (!isMobile) return;
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected
+      if (zoomMode === 'fit-width' && zoom < 1.5) {
+        setZoom(1.5);
+        if (setZoomMode) setZoomMode('manual');
+      } else {
+        if (setZoomMode) setZoomMode('fit-width');
+        // The calculateMobileZoom effect will run because zoomMode changed
+      }
+    }
+    lastTapRef.current = now;
   };
 
   return (
-    <main className="preview-container">
+    <main className="preview-container" ref={containerRef}>
       {/* Top Controls Toolbar */}
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
-      <div className="toolbar px-4 md:px-6">
+      <div className="toolbar px-4 md:px-6" ref={toolbarRef}>
         <div className="toolbar-info">
           {pdfDoc && (
             <button 
@@ -433,18 +544,18 @@ export default function PDFViewer({
             </button>
           )}
           
-          <span className="page-indicator">
+          <span className="page-indicator hidden md:block">
             {getPageIndicatorText()}
           </span>
         </div>
         
         <div className="toolbar-controls">
-            {/* Toggle Scroll Mode */}
+            {/* Toggle Scroll Mode (Hidden on mobile) */}
             <button 
-              className={`toolbar-btn ${isContinuous ? 'active' : ''}`}
+              className={`toolbar-btn hidden md:flex ${isContinuous ? 'active' : ''}`}
               onClick={() => {
                 setIsContinuous(prev => !prev);
-                setIsBookMode(false); // turn off conflicting book mode
+                setIsBookMode(false);
               }}
               title={isContinuous ? "Switch to Page Mode" : "Switch to Scroll Mode"}
               disabled={isProcessing}
@@ -452,12 +563,12 @@ export default function PDFViewer({
               <ScrollText size={16} />
             </button>
 
-            {/* Toggle Book Mode (Side by Side) */}
+            {/* Toggle Book Mode (Side by Side) (Hidden on mobile) */}
             <button 
-              className={`toolbar-btn ${isBookMode ? 'active' : ''}`}
+              className={`toolbar-btn hidden md:flex ${isBookMode ? 'active' : ''}`}
               onClick={() => {
                 setIsBookMode(prev => !prev);
-                setIsContinuous(false); // turn off conflicting scroll mode
+                setIsContinuous(false);
               }}
               title={isBookMode ? "Switch to Single Page" : "Switch to Book Spread Mode"}
               disabled={isProcessing}
@@ -475,7 +586,7 @@ export default function PDFViewer({
               {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
             </button>
 
-            <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
+            <div className="hidden md:block" style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
 
             {/* Pagination Controls */}
             {!isContinuous && (
@@ -496,7 +607,7 @@ export default function PDFViewer({
                 >
                   <ChevronRight size={18} />
                 </button>
-                <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
+                <div className="hidden md:block" style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
               </>
             )}
 
@@ -504,7 +615,10 @@ export default function PDFViewer({
             <button 
               className="toolbar-btn" 
               disabled={zoom <= 0.25 || isProcessing}
-              onClick={() => setZoom(prev => Math.max(0.25, prev - 0.25))}
+              onClick={() => {
+                setZoom(prev => Math.max(0.25, prev - 0.25));
+                if (setZoomMode) setZoomMode('manual');
+              }}
               title="Zoom Out"
             >
               <ZoomOut size={18} />
@@ -513,7 +627,10 @@ export default function PDFViewer({
             <button 
               className="toolbar-btn" 
               disabled={zoom >= 3.0 || isProcessing}
-              onClick={() => setZoom(prev => Math.min(3.0, prev + 0.25))}
+              onClick={() => {
+                setZoom(prev => Math.min(3.0, prev + 0.25));
+                if (setZoomMode) setZoomMode('manual');
+              }}
               title="Zoom In"
             >
               <ZoomIn size={18} />
@@ -535,8 +652,17 @@ export default function PDFViewer({
       </div>
 
       {/* Viewer Panel */}
-      <div className="viewer-panel" style={{ display: 'block' }}>
-          <div style={{ 
+      <div 
+        className="viewer-panel" 
+        style={{ 
+          display: 'block',
+          paddingTop: 'var(--toolbar-height, 56px)' 
+        }}
+        onTouchEnd={handleDoubleTap}
+      >
+          <div 
+            ref={viewerPanelRef}
+            style={{ 
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center', 
@@ -590,7 +716,14 @@ export default function PDFViewer({
               </div>
             ) : (
               // Single Page View
-              <div className="canvas-wrapper" style={{ position: 'relative' }}>
+              <div 
+                className="canvas-wrapper" 
+                style={{ 
+                  position: 'relative', 
+                  width: baseWidth ? `${baseWidth * zoom}px` : 'auto',
+                  margin: '0 auto' 
+                }}
+              >
                 <canvas ref={singleCanvasRef} className="viewer-canvas" />
                 <div ref={singleTextLayerRef} className="textLayer" />
               </div>
