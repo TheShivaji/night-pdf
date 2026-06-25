@@ -22,6 +22,7 @@ import AmoledVsSepia from './pages/blog/AmoledVsSepia';
 import ReduceEyeStrain from './pages/blog/ReduceEyeStrain';
 import ConvertPdfOnMobile from './pages/blog/ConvertPdfOnMobile';
 import DarkModeVsLightMode from './pages/blog/DarkModeVsLightMode';
+import ReadApiDocumentationDarkMode from './pages/blog/ReadApiDocumentationDarkMode';
 
 function ReaderWorkspace() {
   // File & Document States
@@ -436,6 +437,7 @@ export default function App() {
           <Route path="/blog/reduce-eye-strain-while-reading-pdf" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><ReduceEyeStrain /><Footer /></div>} />
           <Route path="/blog/convert-pdf-to-dark-mode-on-mobile" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><ConvertPdfOnMobile /><Footer /></div>} />
           <Route path="/blog/dark-mode-vs-light-mode-reading" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><DarkModeVsLightMode /><Footer /></div>} />
+          <Route path="/blog/read-api-documentation-pdf-dark-mode" element={<div className="flex flex-col min-h-screen bg-black text-white"><Navbar /><ReadApiDocumentationDarkMode /><Footer /></div>} />
         </Routes>
       </Router>
     </HelmetProvider>

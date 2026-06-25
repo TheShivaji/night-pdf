@@ -6,6 +6,16 @@ import { motion } from 'framer-motion';
 
 const articles = [
   {
+    title: 'How to Read API Documentation & PDFs in Dark Mode Comfortably',
+    slug: 'read-api-documentation-pdf-dark-mode',
+    category: 'Developer Guides',
+    readTime: '10 min read',
+    date: 'Jun 24, 2026',
+    excerpt: 'Tired of blinding white API manuals? Learn how to read developer manuals, AWS documentation, and Stripe diagrams in dark mode without breaking colors or layout.',
+    accent: '#6366f1',
+    accentBg: 'rgba(99,102,241,0.06)',
+  },
+  {
     title: 'How to Read PDF at Night Without Eye Strain',
     slug: 'how-to-read-pdf-at-night',
     category: 'Reading Tips',
