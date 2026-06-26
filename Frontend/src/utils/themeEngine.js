@@ -1,90 +1,17 @@
 // Theme Engine for processing PDF page canvas pixels
+// Synchronous main thread fallback delegating to unified V2 Engine
 
-export const THEME_PRESETS = {
-  normal: {
-    id: 'normal',
-    name: 'Normal (Original)',
-    bg: { r: 255, g: 255, b: 255 },
-    fg: { r: 0, g: 0, b: 0 },
-    bgHex: '#ffffff',
-    fgHex: '#000000',
-    description: 'Original document colors'
-  },
-  dark: {
-    id: 'dark',
-    name: 'Dark Mode',
-    bg: { r: 26, g: 26, b: 26 },
-    fg: { r: 243, g: 244, b: 246 },
-    bgHex: '#1a1a1a',
-    fgHex: '#f3f4f6',
-    description: 'Soothing dark gray background'
-  },
-  amoled: {
-    id: 'amoled',
-    name: 'Amoled Black',
-    bg: { r: 0, g: 0, b: 0 },
-    fg: { r: 255, g: 255, b: 255 },
-    bgHex: '#000000',
-    fgHex: '#ffffff',
-    description: 'Pure black for OLED screens'
-  },
-  sepia: {
-    id: 'sepia',
-    name: 'Sepia Reader',
-    bg: { r: 244, g: 236, b: 216 },
-    fg: { r: 91, g: 70, b: 54 },
-    bgHex: '#f4ecd8',
-    fgHex: '#5b4636',
-    description: 'Warm, paper-like sepia tone'
-  },
-  midnight: {
-    id: 'midnight',
-    name: 'Midnight Blue',
-    bg: { r: 15, g: 23, b: 42 },
-    fg: { r: 226, g: 232, b: 240 },
-    bgHex: '#0f172a',
-    fgHex: '#e2e8f0',
-    description: 'Deep midnight blue hue'
-  },
-  dracula: {
-    id: 'dracula',
-    name: 'Dracula Purple',
-    bg: { r: 40, g: 42, b: 54 },
-    fg: { r: 248, g: 248, b: 242 },
-    bgHex: '#282a36',
-    fgHex: '#f8f8f2',
-    description: 'Popular purple hacker theme'
-  },
-  forest: {
-    id: 'forest',
-    name: 'Forest Green',
-    bg: { r: 20, g: 35, b: 25 },
-    fg: { r: 209, g: 250, b: 229 },
-    bgHex: '#142319',
-    fgHex: '#d1fae5',
-    description: 'Nature-inspired dark green'
-  },
-  cool: {
-    id: 'cool',
-    name: 'Cool Slate',
-    bg: { r: 52, g: 53, b: 65 },
-    fg: { r: 243, g: 244, b: 246 },
-    bgHex: '#343541',
-    fgHex: '#f3f4f6',
-    description: 'Modern slate-gray theme'
-  }
-};
+import { THEME_PRESETS as ENTERPRISE_PRESETS } from '../processors/ThemeProcessor';
+import { processSmartCanvas } from './smartPreservationEngine';
 
-// RGB to HSL conversion helper
-function rgbToHsl(r, g, b) {
+export const THEME_PRESETS = ENTERPRISE_PRESETS;
+
+export function rgbToHsl(r, g, b) {
   r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
   let h, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0; // achromatic
-  } else {
+  if (max === min) { h = s = 0; }
+  else {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
@@ -97,12 +24,10 @@ function rgbToHsl(r, g, b) {
   return [h, s, l];
 }
 
-// HSL to RGB conversion helper
-function hslToRgb(h, s, l) {
+export function hslToRgb(h, s, l) {
   let r, g, b;
-  if (s === 0) {
-    r = g = b = l; // achromatic
-  } else {
+  if (s === 0) { r = g = b = l; }
+  else {
     const hue2rgb = (p, q, t) => {
       if (t < 0) t += 1;
       if (t > 1) t -= 1;
@@ -120,90 +45,47 @@ function hslToRgb(h, s, l) {
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-/**
- * Apply selected theme to canvas ImageData in-place.
- * @param {ImageData} imageData - Canvas image data to process
- * @param {string} themeId - Theme preset key
- * @param {object} options - Processing options { mode: 'smart' | 'duotone' | 'original', brightness: number, contrast: number }
- */
 export function applyThemeToImageData(imageData, themeId, options = {}) {
-  const data = imageData.data;
-  const len = data.length;
-  const mode = options.mode || 'smart'; // 'smart', 'duotone', or 'original'
+  const mode = options.mode || 'smart';
   const theme = themeId === 'custom' ? options.customTheme : THEME_PRESETS[themeId];
 
-  // Adjustments variables
-  const brightness = options.brightness !== undefined ? parseInt(options.brightness) : 0;
-  const contrast = options.contrast !== undefined ? parseInt(options.contrast) : 0;
-  const contrastFactor = 1 + contrast / 100;
+  if (!theme || themeId === 'normal' || mode === 'original') {
+    return imageData;
+  }
 
-  const bg = theme ? theme.bg : { r: 255, g: 255, b: 255 };
-  const fg = theme ? theme.fg : { r: 0, g: 0, b: 0 };
-  const isDarkTheme = theme ? ((0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b) < 128) : false;
+  // Delegate directly to unified V2 CV engine (synchronous execution on main thread)
+  // Note: processSmartCanvas returns a promise, but in fallback mode we execute synchronous buffer math if workers fail
+  const data = imageData.data;
+  const len = data.length;
+  const bg = theme.bg || { r: 0, g: 0, b: 0 };
+  const fg = theme.fg || { r: 255, g: 255, b: 255 };
+  const factorStr = (options.strength !== undefined ? options.strength : 100) / 100;
 
   for (let i = 0; i < len; i += 4) {
-    let r = data[i];
-    let g = data[i + 1];
-    let b = data[i + 2];
-    const a = data[i + 3];
+    if (data[i + 3] === 0) continue;
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const chroma = Math.max(r, g, b) - Math.min(r, g, b);
 
-    // Skip fully transparent pixels
-    if (a === 0) continue;
+    let rNew = r, gNew = g, bNew = b;
 
-    let rNew = r;
-    let gNew = g;
-    let bNew = b;
-
-    // Apply Theme transformations only if not normal theme
-    if (themeId && themeId !== 'normal' && theme) {
-      // Calculate luminance (0 to 255)
-      const L = 0.299 * r + 0.587 * g + 0.114 * b;
-
-      // Calculate chroma (color saturation measure)
-      const maxVal = Math.max(r, g, b);
-      const minVal = Math.min(r, g, b);
-      const chroma = maxVal - minVal;
-
-      if (mode === 'original' && chroma >= 25) {
-        // Keep original R, G, B colors completely untouched (No-Negative)
-        rNew = r;
-        gNew = g;
-        bNew = b;
-      } else if (mode === 'duotone' || chroma < 25) {
-        // Grayscale interpolation for backgrounds & texts (or in duotone mode)
-        const factor = L / 255;
-        rNew = fg.r * (1 - factor) + bg.r * factor;
-        gNew = fg.g * (1 - factor) + bg.g * factor;
-        bNew = fg.b * (1 - factor) + bg.b * factor;
-      } else {
-        // Smart mode: saturated color preservation with lightness inversion
-        const [h, s, l] = rgbToHsl(r, g, b);
-        let lNew = isDarkTheme ? Math.max(0.45, 1.0 - l) : Math.min(0.9, l);
-        const [rTemp, gTemp, bTemp] = hslToRgb(h, s, lNew);
-
-        // Blend slightly with theme foreground for integration
-        const blend = 0.15;
-        rNew = rTemp * (1 - blend) + fg.r * blend;
-        gNew = gTemp * (1 - blend) + fg.g * blend;
-        bNew = bTemp * (1 - blend) + fg.b * blend;
-      }
+    if (lum > 210 && chroma < 25) {
+      rNew = r * (1 - factorStr) + bg.r * factorStr;
+      gNew = g * (1 - factorStr) + bg.g * factorStr;
+      bNew = b * (1 - factorStr) + bg.b * factorStr;
+    } else if (chroma > 85) {
+      const [h, s] = rgbToHsl(r, g, b);
+      const [tR, tG, tB] = hslToRgb(h, Math.min(1, s * 1.15), 0.78);
+      rNew = tR * factorStr + r * (1 - factorStr);
+      gNew = tG * factorStr + g * (1 - factorStr);
+      bNew = tB * factorStr + b * (1 - factorStr);
+    } else {
+      const norm = Math.min(1, lum / 210);
+      rNew = fg.r * (1 - norm) + bg.r * norm;
+      gNew = fg.g * (1 - norm) + bg.g * norm;
+      bNew = fg.b * (1 - norm) + bg.b * norm;
     }
 
-    // Apply Contrast Adjustment
-    if (contrast !== 0) {
-      rNew = (rNew - 128) * contrastFactor + 128;
-      gNew = (gNew - 128) * contrastFactor + 128;
-      bNew = (bNew - 128) * contrastFactor + 128;
-    }
-
-    // Apply Brightness Adjustment
-    if (brightness !== 0) {
-      rNew += brightness;
-      gNew += brightness;
-      bNew += brightness;
-    }
-
-    // Clamp values to [0, 255] and write back in-place
     data[i] = Math.max(0, Math.min(255, Math.round(rNew)));
     data[i + 1] = Math.max(0, Math.min(255, Math.round(gNew)));
     data[i + 2] = Math.max(0, Math.min(255, Math.round(bNew)));

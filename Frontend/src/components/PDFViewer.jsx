@@ -10,11 +10,16 @@ import {
   BookOpen,
   X,
   Maximize,
-  Minimize
+  Minimize,
+  Columns,
+  Sliders
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { applyThemeToImageData, THEME_PRESETS } from '../utils/themeEngine';
 import { applyBoldingToCanvas } from '../utils/pdfProcessor';
+import { globalWorkerPool } from '../processors/WorkerManager';
+import { globalPageCache } from '../processors/CacheManager';
+import { ThemeProcessor } from '../processors/ThemeProcessor';
 import ShortcutsModal from './ShortcutsModal';
 
 function PDFPageCanvas({ 
@@ -23,17 +28,22 @@ function PDFPageCanvas({
   zoom, 
   selectedTheme, 
   customTheme,
-  mode, 
-  brightness, 
-  contrast,
-  boldness
+  mode = 'smart', 
+  brightness = 0, 
+  contrast = 0,
+  boldness = 0,
+  themeStrength = 100,
+  adaptiveThreshold = 50,
+  isWiperActive = false
 }) {
   const canvasRef = useRef(null);
+  const lightCanvasRef = useRef(null);
   const textLayerRef = useRef(null);
   const containerRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 600, height: 800 });
   const renderTaskRef = useRef(null);
+  const [wiperPos, setWiperPos] = useState(50); // percentage
 
   // 1. Get aspect ratio size placeholders
   useEffect(() => {
@@ -52,7 +62,7 @@ function PDFPageCanvas({
       ([entry]) => {
         setIsVisible(entry.isIntersecting);
       },
-      { rootMargin: '2000px 0px' } // Load pages 2000px ahead, unload when far away
+      { rootMargin: '2000px 0px' } // Load ahead, unload far away
     );
 
     const currentContainer = containerRef.current;
@@ -67,7 +77,7 @@ function PDFPageCanvas({
     };
   }, []);
 
-  // 3. Render page (Double-buffered for no-flash, Retina DPR scaled)
+  // 3. Render page (Double-buffered for no-flash, Web Worker & LRU cache backed)
   useEffect(() => {
     if (!isVisible || !canvasRef.current) return;
 
@@ -75,68 +85,18 @@ function PDFPageCanvas({
 
     const renderPage = async () => {
       try {
+        const docId = pdfDoc._transport?.docId || 'pdf_doc';
+        const cacheKey = globalPageCache.getCacheKey({
+          docId, pageNum, zoom, themeId: selectedTheme, strength: themeStrength, mode, threshold: adaptiveThreshold
+        });
+
         const page = await pdfDoc.getPage(pageNum);
         if (!active) return;
 
         const viewport = page.getViewport({ scale: zoom });
-        const dpr = Math.min(window.devicePixelRatio || 1, 2.5); // Cap at 2.5x for memory
+        const dpr = Math.min(window.devicePixelRatio || 1, 2.5); // Cap at 2.5x
         
-        // Use detached offscreen canvas to prevent white flash during re-render
-        const offscreenCanvas = document.createElement('canvas');
-        const offCtx = offscreenCanvas.getContext('2d');
-        offscreenCanvas.width = viewport.width * dpr;
-        offscreenCanvas.height = viewport.height * dpr;
-
-        // Scale context for Retina
-        offCtx.scale(dpr, dpr);
-
-        if (renderTaskRef.current) {
-          renderTaskRef.current.cancel();
-        }
-
-        const renderContext = {
-          canvasContext: offCtx,
-          viewport: viewport,
-        };
-
-        const renderTask = page.render(renderContext);
-        renderTaskRef.current = renderTask;
-
-        await renderTask.promise;
-        if (!active) return;
-
-        // Apply filters directly to the offscreen canvas
-        if (boldness > 0) {
-          applyBoldingToCanvas(offscreenCanvas, boldness);
-        }
-
-        const isNormal = selectedTheme === 'normal';
-        const hasAdjustments = brightness !== 0 || contrast !== 0;
-
-        if (!isNormal || hasAdjustments || mode === 'original') {
-          // Note: getImageData on Retina canvases is large, process full bounds
-          const imgData = offCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-          applyThemeToImageData(imgData, selectedTheme, { 
-            mode, 
-            brightness, 
-            contrast,
-            customTheme 
-          });
-          offCtx.putImageData(imgData, 0, 0);
-        }
-
-        // Now swap the fully rendered buffer into the visible canvas
-        const visibleCanvas = canvasRef.current;
-        if (visibleCanvas && active) {
-          visibleCanvas.width = offscreenCanvas.width;
-          visibleCanvas.height = offscreenCanvas.height;
-          visibleCanvas.style.width = `${viewport.width}px`;
-          visibleCanvas.style.height = `${viewport.height}px`;
-          const visibleCtx = visibleCanvas.getContext('2d');
-          visibleCtx.drawImage(offscreenCanvas, 0, 0);
-        }
-
-        // Render Text Layer
+        // Render Text Layer & OCR preservation
         const textContent = await page.getTextContent();
         const textLayerDiv = textLayerRef.current;
         if (textLayerDiv && active) {
@@ -149,6 +109,89 @@ function PDFPageCanvas({
             viewport: viewport
           });
           await textLayer.render();
+        }
+
+        // Check LRU Cache
+        const cachedBitmap = globalPageCache.get(cacheKey);
+        const visibleCanvas = canvasRef.current;
+        const visibleCtx = visibleCanvas?.getContext('2d');
+
+        if (!isWiperActive && cachedBitmap && visibleCanvas && active) {
+          visibleCanvas.width = viewport.width * dpr;
+          visibleCanvas.height = viewport.height * dpr;
+          visibleCanvas.style.width = `${viewport.width}px`;
+          visibleCanvas.style.height = `${viewport.height}px`;
+          visibleCtx?.drawImage(cachedBitmap, 0, 0);
+          return;
+        }
+
+        // Use detached offscreen canvas to prevent white flash
+        const offscreenCanvas = document.createElement('canvas');
+        const offCtx = offscreenCanvas.getContext('2d');
+        offscreenCanvas.width = viewport.width * dpr;
+        offscreenCanvas.height = viewport.height * dpr;
+        offCtx.scale(dpr, dpr);
+
+        // Guarantee solid white paper background for transparent PDFs
+        offCtx.fillStyle = '#ffffff';
+        offCtx.fillRect(0, 0, viewport.width, viewport.height);
+
+        if (renderTaskRef.current) {
+          renderTaskRef.current.cancel();
+        }
+
+        const renderTask = page.render({
+          canvasContext: offCtx,
+          viewport: viewport
+        });
+        renderTaskRef.current = renderTask;
+
+        await renderTask.promise;
+        if (!active) return;
+
+        if (boldness > 0) {
+          applyBoldingToCanvas(offscreenCanvas, boldness);
+        }
+
+        // Save original light render for comparison wiper if active
+        if (isWiperActive && lightCanvasRef.current && active) {
+          const lCanvas = lightCanvasRef.current;
+          lCanvas.width = offscreenCanvas.width;
+          lCanvas.height = offscreenCanvas.height;
+          lCanvas.style.width = `${viewport.width}px`;
+          lCanvas.style.height = `${viewport.height}px`;
+          lCanvas.getContext('2d').drawImage(offscreenCanvas, 0, 0);
+        }
+
+        const isNormal = selectedTheme === 'normal';
+        const hasAdjustments = brightness !== 0 || contrast !== 0 || themeStrength < 100;
+
+        if (!isNormal || hasAdjustments || mode === 'original') {
+          const activePreset = ThemeProcessor.getPreset(selectedTheme, customTheme);
+          const imgData = offCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+          
+          // Execute Asynchronous Web Worker Smart Preservation
+          const processedImgData = await globalWorkerPool.processCanvas(imgData, activePreset, {
+            mode,
+            strength: themeStrength,
+            threshold: adaptiveThreshold,
+            brightness,
+            contrast
+          });
+          
+          if (!active) return;
+          offCtx.putImageData(processedImgData, 0, 0);
+        }
+
+        if (visibleCanvas && active) {
+          visibleCanvas.width = offscreenCanvas.width;
+          visibleCanvas.height = offscreenCanvas.height;
+          visibleCanvas.style.width = `${viewport.width}px`;
+          visibleCanvas.style.height = `${viewport.height}px`;
+          visibleCtx?.drawImage(offscreenCanvas, 0, 0);
+          
+          // Save to LRU cache
+          globalPageCache.set(cacheKey, offscreenCanvas);
         }
       } catch (err) {
         if (err.name !== 'RenderingCancelledException') {
@@ -165,23 +208,86 @@ function PDFPageCanvas({
         renderTaskRef.current.cancel();
       }
     };
-  }, [isVisible, pdfDoc, pageNum, zoom, selectedTheme, customTheme, mode, brightness, contrast, boldness]);
+  }, [isVisible, pdfDoc, pageNum, zoom, selectedTheme, customTheme, mode, brightness, contrast, boldness, themeStrength, adaptiveThreshold, isWiperActive]);
 
   return (
     <div 
       ref={containerRef} 
-      className="canvas-wrapper"
+      className="canvas-wrapper group"
       style={{ 
         width: `${dimensions.width * zoom}px`,
         aspectRatio: `${dimensions.width} / ${dimensions.height}`,
         marginBottom: '20px',
         position: 'relative',
-        margin: '0 auto 20px auto'
+        margin: '0 auto 20px auto',
+        overflow: 'hidden'
       }}
     >
       {isVisible ? (
         <>
-          <canvas ref={canvasRef} className="viewer-canvas" />
+          <canvas 
+            ref={canvasRef} 
+            className="viewer-canvas" 
+            style={{ display: 'block', width: '100%', height: '100%' }} 
+          />
+          <div ref={textLayerRef} className="textLayer" />
+          
+          {/* Interactive Comparison Wiper Layer (Masked 1:1 via clip-path) */}
+          {isWiperActive && selectedTheme !== 'normal' && (
+            <>
+              <canvas 
+                ref={lightCanvasRef} 
+                className="viewer-canvas" 
+                style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  width: '100%', 
+                  height: '100%', 
+                  zIndex: 10,
+                  display: 'block',
+                  clipPath: `inset(0 calc(100% - ${wiperPos}%) 0 0)`
+                }} 
+              />
+              <span className="absolute top-2 left-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider z-15 pointer-events-none transition-opacity" style={{ opacity: wiperPos > 12 ? 1 : 0 }}>Original Light</span>
+              
+              {/* Vertical Blue Separator Line */}
+              <div 
+                className="absolute top-0 bottom-0 z-15 pointer-events-none"
+                style={{
+                  left: `${wiperPos}%`,
+                  width: '2px',
+                  background: '#3b82f6',
+                  boxShadow: '0 0 12px rgba(59, 130, 246, 0.6)'
+                }}
+              />
+
+              {/* Draggable Handle */}
+              <div 
+                className="absolute top-0 bottom-0 z-20 cursor-ew-resize flex items-center justify-center"
+                style={{ left: `calc(${wiperPos}% - 12px)`, width: '24px' }}
+                onMouseDown={(e) => {
+                  const rect = containerRef.current.getBoundingClientRect();
+                  const onMove = (moveEvent) => {
+                    const pos = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+                    setWiperPos(Math.max(2, Math.min(98, pos)));
+                  };
+                  const onUp = () => {
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onUp);
+                  };
+                  window.addEventListener('mousemove', onMove);
+                  window.addEventListener('mouseup', onUp);
+                }}
+              >
+                <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white text-[10px]">
+                  ↔
+                </div>
+              </div>
+              <span className="absolute top-2 right-2 bg-slate-900/90 text-blue-300 border border-slate-700 text-[10px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider z-15 pointer-events-none transition-opacity" style={{ opacity: wiperPos < 88 ? 1 : 0 }}>Smart Dark</span>
+            </>
+          )}
+
           <div ref={textLayerRef} className="textLayer" />
         </>
       ) : (
@@ -214,10 +320,12 @@ export default function PDFViewer({
   selectedTheme,
   setSelectedTheme,
   customTheme,
-  mode,
-  brightness,
-  contrast,
-  boldness,
+  mode = 'smart',
+  brightness = 0,
+  contrast = 0,
+  boldness = 0,
+  themeStrength = 100,
+  adaptiveThreshold = 50,
   isSidebarOpen,
   setIsSidebarOpen,
   isMobile,
@@ -230,39 +338,25 @@ export default function PDFViewer({
 }) {
   const [isContinuous, setIsContinuous] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const singleCanvasRef = useRef(null);
-  const singleTextLayerRef = useRef(null);
-  const singleRenderTaskRef = useRef(null);
+  const [isWiperActive, setIsWiperActive] = useState(false);
   const [baseWidth, setBaseWidth] = useState(null);
 
   const toolbarRef = useRef(null);
   const containerRef = useRef(null);
   const viewerPanelRef = useRef(null);
 
-  // Measure dynamic toolbar height to prevent overlap
   useEffect(() => {
     if (!toolbarRef.current || !containerRef.current) return;
-    
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const height = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
         containerRef.current.style.setProperty('--toolbar-height', `${height}px`);
-        
-        // Debugging verification as requested
-        if (toolbarRef.current.scrollWidth > toolbarRef.current.clientWidth) {
-          console.warn('Toolbar Overflow Detected:', {
-            scrollWidth: toolbarRef.current.scrollWidth,
-            clientWidth: toolbarRef.current.clientWidth
-          });
-        }
       }
     });
-    
     observer.observe(toolbarRef.current);
     return () => observer.disconnect();
   }, []);
 
-  // 1. Fetch unscaled PDF width on load
   useEffect(() => {
     if (pdfDoc) {
       pdfDoc.getPage(1).then(page => {
@@ -272,221 +366,15 @@ export default function PDFViewer({
     }
   }, [pdfDoc]);
 
-  // 2. Debounced Fit-to-Width & Safe Position Recalculation
+  // Fit-to-Width resizing
   useEffect(() => {
     if (!isMobile || zoomMode !== 'fit-width' || !baseWidth) return;
-
-    let rAF;
-    const calculateMobileZoom = () => {
-      // Pause if tab is hidden
-      if (document.visibilityState === 'hidden') return;
-      
-      // Use containerRef (preview-container) to get actual screen width, handling safe areas
-      const actualViewerWidth = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
-      const targetWidth = actualViewerWidth - 20; // 10px margin per side
-      let newZoom = targetWidth / baseWidth;
-      
-      // Small PDF protection (max 2.0x scale)
-      newZoom = Math.min(newZoom, 2.0);
-      
-      // Position Preservation: Cache scroll ratio
-      const scrollRatio = window.scrollY / document.body.scrollHeight;
-      
-      setZoom(newZoom);
-      
-      // Restore position after render
-      setTimeout(() => {
-        window.scrollTo(0, scrollRatio * document.body.scrollHeight);
-      }, 50);
-    };
-
-    // Calculate immediately on load
-    calculateMobileZoom();
-
-    const handleResize = () => {
-      cancelAnimationFrame(rAF);
-      rAF = requestAnimationFrame(calculateMobileZoom);
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    document.addEventListener('visibilitychange', calculateMobileZoom);
-    
-    return () => {
-      cancelAnimationFrame(rAF);
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-      document.removeEventListener('visibilitychange', calculateMobileZoom);
-    };
+    const actualViewerWidth = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
+    const targetWidth = actualViewerWidth - 20;
+    let newZoom = Math.min(2.0, targetWidth / baseWidth);
+    setZoom(newZoom);
   }, [isMobile, zoomMode, baseWidth, setZoom]);
 
-  // Sync HTML5 Fullscreen state change events
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [setIsFullscreen]);
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error('Error entering fullscreen:', err);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  // Keyboard Shortcuts (Reader Scoped)
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (
-        e.target.tagName === 'INPUT' || 
-        e.target.tagName === 'TEXTAREA' || 
-        e.target.isContentEditable
-      ) {
-        return; // Ignore if typing
-      }
-
-      switch (e.key) {
-        case 't':
-        case 'T':
-          if (setSelectedTheme) {
-            const themeKeys = Object.keys(THEME_PRESETS);
-            const currentIndex = themeKeys.indexOf(selectedTheme === 'custom' ? 'dark' : selectedTheme);
-            const nextIndex = (currentIndex + 1) % themeKeys.length;
-            setSelectedTheme(themeKeys[nextIndex]);
-          }
-          break;
-        case '+':
-        case '=':
-          setZoom(z => Math.min(z + 0.1, 5.0));
-          break;
-        case '-':
-          setZoom(z => Math.max(z - 0.1, 0.5));
-          break;
-        case 'ArrowRight':
-          setCurrentPage(p => Math.min(p + 1, numPages));
-          break;
-        case 'ArrowLeft':
-          setCurrentPage(p => Math.max(p - 1, 1));
-          break;
-        case 'f':
-        case 'F':
-          toggleFullscreen();
-          break;
-        case '?':
-          setIsShortcutsOpen(true);
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [numPages, selectedTheme, setSelectedTheme, setCurrentPage, setZoom]);
-
-  // Calculate pages for Book Mode (spread double pages)
-  const leftPage = currentPage % 2 !== 0 ? currentPage : currentPage - 1;
-  const rightPage = leftPage + 1;
-
-  // Single Page Mode: Render active page and text layer to canvas
-  useEffect(() => {
-    if (!pdfDoc || isContinuous || isBookMode) return;
-
-    let active = true;
-
-    const renderSinglePage = async () => {
-      try {
-        const page = await pdfDoc.getPage(currentPage);
-        if (!active) return;
-
-        const viewport = page.getViewport({ scale: zoom });
-        const dpr = Math.min(window.devicePixelRatio || 1, 2.5); // Retina cap
-        
-        const offscreenCanvas = document.createElement('canvas');
-        const offCtx = offscreenCanvas.getContext('2d');
-        offscreenCanvas.width = viewport.width * dpr;
-        offscreenCanvas.height = viewport.height * dpr;
-        offCtx.scale(dpr, dpr);
-
-        if (singleRenderTaskRef.current) {
-          singleRenderTaskRef.current.cancel();
-        }
-
-        const renderContext = {
-          canvasContext: offCtx,
-          viewport: viewport,
-        };
-
-        const renderTask = page.render(renderContext);
-        singleRenderTaskRef.current = renderTask;
-
-        await renderTask.promise;
-        if (!active) return;
-
-        if (boldness > 0) {
-          applyBoldingToCanvas(offscreenCanvas, boldness);
-        }
-
-        const isNormal = selectedTheme === 'normal';
-        const hasAdjustments = brightness !== 0 || contrast !== 0;
-
-        if (!isNormal || hasAdjustments || mode === 'original') {
-          const imgData = offCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-          applyThemeToImageData(imgData, selectedTheme, { 
-            mode, 
-            brightness, 
-            contrast,
-            customTheme
-          });
-          offCtx.putImageData(imgData, 0, 0);
-        }
-
-        const visibleCanvas = singleCanvasRef.current;
-        if (visibleCanvas && active) {
-          visibleCanvas.width = offscreenCanvas.width;
-          visibleCanvas.height = offscreenCanvas.height;
-          visibleCanvas.style.width = `${viewport.width}px`;
-          visibleCanvas.style.height = `${viewport.height}px`;
-          const visibleCtx = visibleCanvas.getContext('2d');
-          visibleCtx.drawImage(offscreenCanvas, 0, 0);
-        }
-
-        const textContent = await page.getTextContent();
-        const textLayerDiv = singleTextLayerRef.current;
-        if (textLayerDiv && active) {
-          textLayerDiv.innerHTML = '';
-          textLayerDiv.style.width = `${viewport.width}px`;
-          textLayerDiv.style.height = `${viewport.height}px`;
-          const textLayer = new pdfjsLib.TextLayer({
-            textContentSource: textContent,
-            container: textLayerDiv,
-            viewport: viewport
-          });
-          await textLayer.render();
-        }
-      } catch (err) {
-        if (err.name !== 'RenderingCancelledException') {
-          console.error('Single page render error:', err);
-        }
-      }
-    };
-
-    renderSinglePage();
-
-    return () => {
-      active = false;
-      if (singleRenderTaskRef.current) {
-        singleRenderTaskRef.current.cancel();
-      }
-    };
-  }, [pdfDoc, currentPage, zoom, selectedTheme, customTheme, mode, brightness, contrast, boldness, isContinuous, isBookMode]);
-
-  // Adjust pagination buttons for different viewing layouts
   const handlePrevPage = () => {
     if (isBookMode) {
       setCurrentPage(prev => Math.max(1, prev - 2));
@@ -497,195 +385,155 @@ export default function PDFViewer({
 
   const handleNextPage = () => {
     if (isBookMode) {
-      setCurrentPage(prev => {
-        const isLeftOdd = prev % 2 !== 0;
-        const currentLeft = isLeftOdd ? prev : prev - 1;
-        return Math.min(numPages, currentLeft + 2);
-      });
+      setCurrentPage(prev => Math.min(numPages, prev + 2));
     } else {
       setCurrentPage(prev => Math.min(numPages, prev + 1));
     }
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   const getPageIndicatorText = () => {
-    if (isContinuous) return `All Pages (${numPages})`;
+    if (!numPages) return '0 / 0';
     if (isBookMode) {
-      return rightPage <= numPages 
-        ? `Pages ${leftPage}-${rightPage} of ${numPages}` 
-        : `Page ${leftPage} of ${numPages}`;
+      const left = currentPage % 2 !== 0 ? currentPage : currentPage - 1;
+      const right = left + 1;
+      return right <= numPages ? `${left}-${right} / ${numPages}` : `${left} / ${numPages}`;
     }
-    return `Page ${currentPage} of ${numPages}`;
+    return `${currentPage} / ${numPages}`;
   };
 
-
-
-  const lastTapRef = useRef(0);
-  const handleDoubleTap = () => {
-    if (!isMobile) return;
-    const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300;
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected
-      if (zoomMode === 'fit-width' && zoom < 1.5) {
-        setZoom(1.5);
-        if (setZoomMode) setZoomMode('manual');
-      } else {
-        if (setZoomMode) setZoomMode('fit-width');
-        // The calculateMobileZoom effect will run because zoomMode changed
-      }
-    }
-    lastTapRef.current = now;
-  };
+  const leftPage = currentPage % 2 !== 0 ? currentPage : currentPage - 1;
+  const rightPage = leftPage + 1;
 
   return (
-    <main className="preview-container" ref={containerRef}>
-      {/* Top Controls Toolbar */}
+    <main className="preview-container w-full" ref={containerRef}>
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
       <div className="toolbar md:px-6" ref={toolbarRef}>
-        <div className="toolbar-info">
+        <div className="toolbar-info flex items-center gap-2">
           {pdfDoc && (
             <button 
               className={`toolbar-btn sidebar-toggle-btn ${isSidebarOpen ? 'active' : ''}`}
-              onClick={() => setIsSidebarOpen(prev => !prev)}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               title="Toggle Settings"
             >
               <Menu size={18} />
             </button>
           )}
-          
-          <span className="page-indicator hidden md:block">
+          <span className="page-indicator font-mono text-xs hidden md:block">
             {getPageIndicatorText()}
           </span>
         </div>
         
-        <div className="toolbar-controls">
-            {/* Toggle Scroll Mode (Hidden on mobile) */}
-            <button 
-              className={`toolbar-btn hidden md:flex ${isContinuous ? 'active' : ''}`}
-              onClick={() => {
-                setIsContinuous(prev => !prev);
-                setIsBookMode(false);
-              }}
-              title={isContinuous ? "Switch to Page Mode" : "Switch to Scroll Mode"}
-              disabled={isProcessing}
-            >
-              <ScrollText size={16} />
-            </button>
+        <div className="toolbar-controls flex items-center gap-1.5">
+          {/* Before/After Split Wiper Button */}
+          <button 
+            className={`toolbar-btn px-2.5 flex items-center gap-1.5 text-xs font-mono border ${isWiperActive ? 'bg-blue-600 text-white border-blue-400' : 'border-slate-700 text-blue-300 hover:bg-slate-800'}`}
+            onClick={() => setIsWiperActive(!isWiperActive)}
+            title="Compare Original vs Smart Dark Theme in real time"
+            disabled={isProcessing || selectedTheme === 'normal'}
+          >
+            <Columns size={14} />
+            <span className="hidden sm:inline">Compare</span>
+          </button>
 
-            {/* Toggle Book Mode (Side by Side) (Hidden on mobile) */}
-            <button 
-              className={`toolbar-btn hidden md:flex ${isBookMode ? 'active' : ''}`}
-              onClick={() => {
-                setIsBookMode(prev => !prev);
-                setIsContinuous(false);
-              }}
-              title={isBookMode ? "Switch to Single Page" : "Switch to Book Spread Mode"}
-              disabled={isProcessing}
-            >
-              <BookOpen size={16} />
-            </button>
+          <button 
+            className={`toolbar-btn hidden md:flex ${isContinuous ? 'active' : ''}`}
+            onClick={() => { setIsContinuous(!isContinuous); setIsBookMode(false); }}
+            title="Switch Scroll Mode"
+            disabled={isProcessing}
+          >
+            <ScrollText size={16} />
+          </button>
 
-            {/* Fullscreen toggle */}
-            <button 
-              className={`toolbar-btn ${isFullscreen ? 'active' : ''}`}
-              onClick={toggleFullscreen}
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen Mode"}
-              disabled={isProcessing}
-            >
-              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
-            </button>
+          <button 
+            className={`toolbar-btn hidden md:flex ${isBookMode ? 'active' : ''}`}
+            onClick={() => { setIsBookMode(!isBookMode); setIsContinuous(false); }}
+            title="Switch Book Spread Mode"
+            disabled={isProcessing}
+          >
+            <BookOpen size={16} />
+          </button>
 
-            <div className="hidden md:block" style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
+          <button className={`toolbar-btn ${isFullscreen ? 'active' : ''}`} onClick={toggleFullscreen}>
+            {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          </button>
 
-            {/* Pagination Controls */}
-            {!isContinuous && (
-              <>
-                <button 
-                  className="toolbar-btn" 
-                  disabled={(isBookMode ? leftPage <= 1 : currentPage <= 1) || isProcessing}
-                  onClick={handlePrevPage}
-                  title="Previous Page"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button 
-                  className="toolbar-btn" 
-                  disabled={(isBookMode ? rightPage >= numPages : currentPage >= numPages) || isProcessing}
-                  onClick={handleNextPage}
-                  title="Next Page"
-                >
-                  <ChevronRight size={18} />
-                </button>
-                <div className="hidden md:block" style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
-              </>
-            )}
+          <div className="hidden md:block w-[1px] h-5 bg-slate-800 mx-1" />
 
-            {/* Zoom Controls */}
-            <button 
-              className="toolbar-btn" 
-              disabled={zoom <= 0.25 || isProcessing}
-              onClick={() => {
-                setZoom(prev => Math.max(0.25, prev - 0.25));
-                if (setZoomMode) setZoomMode('manual');
-              }}
-              title="Zoom Out"
-            >
-              <ZoomOut size={18} />
-            </button>
-            <span className="zoom-indicator">{Math.round(zoom * 100)}%</span>
-            <button 
-              className="toolbar-btn" 
-              disabled={zoom >= 3.0 || isProcessing}
-              onClick={() => {
-                setZoom(prev => Math.min(3.0, prev + 0.25));
-                if (setZoomMode) setZoomMode('manual');
-              }}
-              title="Zoom In"
-            >
-              <ZoomIn size={18} />
-            </button>
+          {!isContinuous && (
+            <>
+              <button className="toolbar-btn" disabled={currentPage <= 1 || isProcessing} onClick={handlePrevPage}>
+                <ChevronLeft size={18} />
+              </button>
+              <button className="toolbar-btn" disabled={currentPage >= numPages || isProcessing} onClick={handleNextPage}>
+                <ChevronRight size={18} />
+              </button>
+            </>
+          )}
 
-            <div className="hidden md:block" style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-light)', margin: '0 4px' }} />
+          <button className="toolbar-btn" disabled={zoom <= 0.25 || isProcessing} onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}>
+            <ZoomOut size={18} />
+          </button>
+          <span className="zoom-indicator text-xs font-mono">{Math.round(zoom * 100)}%</span>
+          <button className="toolbar-btn" disabled={zoom >= 3.0 || isProcessing} onClick={() => setZoom(z => Math.min(3.0, z + 0.25))}>
+            <ZoomIn size={18} />
+          </button>
 
-            {/* Close PDF */}
-            <button 
-              className="toolbar-btn close-doc-btn" 
-              onClick={clearFile}
-              title="Close PDF"
-              disabled={isProcessing}
-              style={{ color: '#ef4444' }}
-            >
-              <X size={18} />
-            </button>
-          </div>
+          <button className="toolbar-btn text-rose-500 ml-2" onClick={clearFile} title="Close PDF">
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
-      {/* Viewer Panel */}
-      <div 
-        className="viewer-panel" 
-        style={{ 
-          display: 'block',
-          paddingTop: 'var(--toolbar-height, 56px)' 
-        }}
-        onTouchEnd={handleDoubleTap}
-      >
-          <div 
-            ref={viewerPanelRef}
-            style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            width: '100%', 
-            minHeight: '100%',
-            overflowY: 'auto' 
-          }}>
-            {isContinuous ? (
-              // Continuous Scroll View
-              Array.from({ length: numPages }, (_, i) => i + 1).map((pageNo) => (
+      <div className="viewer-panel block pt-[var(--toolbar-height,56px)]">
+        <div ref={viewerPanelRef} className="flex flex-col items-center w-full min-h-full overflow-y-auto">
+          {isContinuous ? (
+            Array.from({ length: numPages }, (_, i) => i + 1).map((pageNo) => (
+              <PDFPageCanvas
+                key={pageNo}
+                pdfDoc={pdfDoc}
+                pageNum={pageNo}
+                zoom={zoom}
+                selectedTheme={selectedTheme}
+                customTheme={customTheme}
+                mode={mode}
+                brightness={brightness}
+                contrast={contrast}
+                boldness={boldness}
+                themeStrength={themeStrength}
+                adaptiveThreshold={adaptiveThreshold}
+                isWiperActive={isWiperActive}
+              />
+            ))
+          ) : isBookMode ? (
+            <div className="book-layout flex gap-6 justify-center w-full p-4">
+              <PDFPageCanvas
+                pdfDoc={pdfDoc}
+                pageNum={leftPage}
+                zoom={zoom}
+                selectedTheme={selectedTheme}
+                customTheme={customTheme}
+                mode={mode}
+                brightness={brightness}
+                contrast={contrast}
+                boldness={boldness}
+                themeStrength={themeStrength}
+                adaptiveThreshold={adaptiveThreshold}
+                isWiperActive={isWiperActive}
+              />
+              {rightPage <= numPages && (
                 <PDFPageCanvas
-                  key={pageNo}
                   pdfDoc={pdfDoc}
-                  pageNum={pageNo}
+                  pageNum={rightPage}
                   zoom={zoom}
                   selectedTheme={selectedTheme}
                   customTheme={customTheme}
@@ -693,51 +541,29 @@ export default function PDFViewer({
                   brightness={brightness}
                   contrast={contrast}
                   boldness={boldness}
+                  themeStrength={themeStrength}
+                  adaptiveThreshold={adaptiveThreshold}
+                  isWiperActive={isWiperActive}
                 />
-              ))
-            ) : isBookMode ? (
-              // Book Spread View (Side-by-side double canvases)
-              <div className="book-layout" style={{ display: 'flex', gap: '20px', justifyContent: 'center', width: '100%', padding: '10px' }}>
-                <PDFPageCanvas
-                  pdfDoc={pdfDoc}
-                  pageNum={leftPage}
-                  zoom={zoom}
-                  selectedTheme={selectedTheme}
-                  customTheme={customTheme}
-                  mode={mode}
-                  brightness={brightness}
-                  contrast={contrast}
-                  boldness={boldness}
-                />
-                {rightPage <= numPages && (
-                  <PDFPageCanvas
-                    pdfDoc={pdfDoc}
-                    pageNum={rightPage}
-                    zoom={zoom}
-                    selectedTheme={selectedTheme}
-                    customTheme={customTheme}
-                    mode={mode}
-                    brightness={brightness}
-                    contrast={contrast}
-                    boldness={boldness}
-                  />
-                )}
-              </div>
-            ) : (
-              // Single Page View
-              <div 
-                className="canvas-wrapper" 
-                style={{ 
-                  position: 'relative', 
-                  width: baseWidth ? `${baseWidth * zoom}px` : 'auto',
-                  margin: '0 auto' 
-                }}
-              >
-                <canvas ref={singleCanvasRef} className="viewer-canvas" />
-                <div ref={singleTextLayerRef} className="textLayer" />
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <PDFPageCanvas
+              pdfDoc={pdfDoc}
+              pageNum={currentPage}
+              zoom={zoom}
+              selectedTheme={selectedTheme}
+              customTheme={customTheme}
+              mode={mode}
+              brightness={brightness}
+              contrast={contrast}
+              boldness={boldness}
+              themeStrength={themeStrength}
+              adaptiveThreshold={adaptiveThreshold}
+              isWiperActive={isWiperActive}
+            />
+          )}
+        </div>
       </div>
     </main>
   );

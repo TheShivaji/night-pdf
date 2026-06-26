@@ -18,6 +18,7 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import { THEME_PRESETS } from "../utils/themeEngine";
+import { DOCUMENT_PROFILES } from "../processors/DocumentProfiler";
 
 export default function Sidebar({
   file,
@@ -29,6 +30,12 @@ export default function Sidebar({
   setCustomTheme,
   mode,
   setMode,
+  themeStrength = 100,
+  setThemeStrength,
+  adaptiveThreshold = 50,
+  setAdaptiveThreshold,
+  docProfile = 'mixed',
+  setDocProfile,
   quality,
   setQuality,
   brightness,
@@ -44,6 +51,8 @@ export default function Sidebar({
   isSidebarOpen,
   setIsSidebarOpen,
   isMobile,
+  exportSmartTheme = false,
+  setExportSmartTheme,
   downloadMode,
   setDownloadMode,
   pagesToConvertStr,
@@ -770,72 +779,106 @@ export default function Sidebar({
                 </div>
 
                 {/* Advanced Settings (Processing Mode) */}
-                <div>
-                  <div className="section-title">Processing Mode</div>
+                <div className="flex flex-col gap-4">
+                  <div className="section-title">Enterprise Smart Preservation</div>
+                  
+                  {/* Smart Document Profile Selector */}
                   <div className="control-row">
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "6px",
-                      }}
-                    >
-                      <span
-                        style={{ fontSize: "11px", color: "var(--text-muted)" }}
-                      >
-                        Color Rendering
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          color: "#ffffff",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {mode === "smart"
-                          ? "Smart Mode"
-                          : mode === "original"
-                            ? "No-Invert Images"
-                            : "Duotone Contrast"}
-                      </span>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-[11px] text-slate-400">Document Profile</span>
+                      <span className="text-[11px] text-blue-400 font-bold">{DOCUMENT_PROFILES[docProfile]?.name || 'Mixed'}</span>
                     </div>
-                    <div
-                      className="toggle-group"
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(3, 1fr)",
-                        gap: "2px",
-                        padding: "2px",
+                    <select
+                      className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded p-1.5 focus:outline-none focus:border-blue-500"
+                      value={docProfile}
+                      onChange={(e) => {
+                        const prof = DOCUMENT_PROFILES[e.target.value];
+                        setDocProfile(e.target.value);
+                        if (prof) {
+                          if (setAdaptiveThreshold) setAdaptiveThreshold(prof.threshold);
+                          if (setThemeStrength) setThemeStrength(prof.strength);
+                        }
                       }}
+                      disabled={isProcessing}
                     >
+                      {Object.values(DOCUMENT_PROFILES).map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Rendering Mode Cards */}
+                  <div className="control-row">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-[11px] text-slate-400">Rendering Strategy</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 bg-slate-900/50 p-1 rounded border border-slate-800">
                       <button
-                        className={`toggle-option ${mode === "smart" ? "active" : ""}`}
+                        className={`flex flex-col items-center justify-center p-2 rounded text-center transition-all ${mode === "smart" ? "bg-blue-600 text-white shadow-md font-bold" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`}
                         onClick={() => setMode("smart")}
                         disabled={isProcessing}
-                        style={{ fontSize: "10px", padding: "8px 2px" }}
+                        title="Intelligent 8x8 block heatmap classification (Protects Images & Charts)"
                       >
-                        <Sparkles size={10} /> Smart
+                        <Sparkles size={14} className="mb-1" />
+                        <span className="text-[10px]">Smart</span>
                       </button>
                       <button
-                        className={`toggle-option ${mode === "original" ? "active" : ""}`}
+                        className={`flex flex-col items-center justify-center p-2 rounded text-center transition-all ${mode === "standard" || mode === "duotone" ? "bg-blue-600 text-white shadow-md font-bold" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`}
+                        onClick={() => setMode("standard")}
+                        disabled={isProcessing}
+                        title="Standard duotone grayscale interpolation"
+                      >
+                        <Contrast size={14} className="mb-1" />
+                        <span className="text-[10px]">Duotone</span>
+                      </button>
+                      <button
+                        className={`flex flex-col items-center justify-center p-2 rounded text-center transition-all ${mode === "original" ? "bg-blue-600 text-white shadow-md font-bold" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`}
                         onClick={() => setMode("original")}
                         disabled={isProcessing}
-                        style={{ fontSize: "10px", padding: "8px 2px" }}
-                        title="Keep original colors of diagrams and photographs"
+                        title="Keep original document colors untouched"
                       >
-                        <Eye size={10} /> No-Invert
-                      </button>
-                      <button
-                        className={`toggle-option ${mode === "duotone" ? "active" : ""}`}
-                        onClick={() => setMode("duotone")}
-                        disabled={isProcessing}
-                        style={{ fontSize: "10px", padding: "8px 2px" }}
-                      >
-                        <Contrast size={10} /> Duotone
+                        <Eye size={14} className="mb-1" />
+                        <span className="text-[10px]">Original</span>
                       </button>
                     </div>
                   </div>
+
+                  {/* Theme Intensity & Adaptive Threshold Sliders */}
+                  {mode === 'smart' && (
+                    <>
+                      <div className="control-row">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[11px] text-slate-400">Theme Intensity</span>
+                          <span className="text-[11px] text-blue-400 font-mono">{themeStrength}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={themeStrength}
+                          onChange={(e) => setThemeStrength && setThemeStrength(Number(e.target.value))}
+                          className="w-full accent-blue-500 bg-slate-800 h-1.5 rounded"
+                          disabled={isProcessing}
+                        />
+                      </div>
+
+                      <div className="control-row">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[11px] text-slate-400" title="Adjust classification sensitivity heuristic">Classification Sensitivity</span>
+                          <span className="text-[11px] text-blue-400 font-mono">{adaptiveThreshold}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="90"
+                          value={adaptiveThreshold}
+                          onChange={(e) => setAdaptiveThreshold && setAdaptiveThreshold(Number(e.target.value))}
+                          className="w-full accent-blue-500 bg-slate-800 h-1.5 rounded"
+                          disabled={isProcessing}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Quality & Download Actions */}
@@ -1000,10 +1043,21 @@ export default function Sidebar({
                       </div>
                     </div>
                   ) : (
-                    <button className="action-btn" onClick={handleDownload}>
-                      <Download size={16} />
-                      Download Eye-Friendly PDF
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <input
+                          type="checkbox"
+                          checked={exportSmartTheme}
+                          onChange={(e) => setExportSmartTheme && setExportSmartTheme(e.target.checked)}
+                          className="accent-blue-500 rounded w-3.5 h-3.5"
+                        />
+                        <span>Export with Smart Theme (Baked Colors)</span>
+                      </label>
+                      <button className="action-btn" onClick={handleDownload}>
+                        <Download size={16} />
+                        {!exportSmartTheme ? "Download Original PDF" : "Download Smart Dark PDF"}
+                      </button>
+                    </div>
                   )}
                 </div>
               </>
