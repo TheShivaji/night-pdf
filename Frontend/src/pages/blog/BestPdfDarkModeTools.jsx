@@ -172,7 +172,7 @@ export default function BestPdfDarkModeTools() {
                     <li>100% Client-side: Your private files never upload to any remote server.</li>
                     <li>8 gorgeous custom eye-friendly themes including AMOLED Black and Sepia.</li>
                     <li>Native transparent text selection and copy support (maintains search index).</li>
-                    <li>Progressive Web App support: works entirely offline once cached.</li>
+                    <li>Progressive Web App support: offline access depends on cached reader assets.</li>
                   </ul>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6">
@@ -368,7 +368,7 @@ export default function BestPdfDarkModeTools() {
                   <Check className="w-3.5 h-3.5 text-white" /> Dark Mode
                 </span>
                 <span className="flex items-center gap-1.5 font-medium text-zinc-300">
-                  <Check className="w-3.5 h-3.5 text-white" /> Works Offline
+                  <Check className="w-3.5 h-3.5 text-white" /> Local processing
                 </span>
               </div>
               <div className="mt-8 flex justify-center">

@@ -345,7 +345,7 @@ export default function HowToReadPdfAtNight() {
                   <Check className="w-3.5 h-3.5 text-white" /> Dark Mode
                 </span>
                 <span className="flex items-center gap-1.5 font-medium text-zinc-300">
-                  <Check className="w-3.5 h-3.5 text-white" /> Works Offline
+                  <Check className="w-3.5 h-3.5 text-white" /> Local processing
                 </span>
               </div>
               <div className="mt-8 flex justify-center">

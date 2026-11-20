@@ -1,184 +1,123 @@
-const DB_NAME = 'NightPDF_DB';
-const DB_VERSION = 1;
-const STORE_NAME = 'recent_files';
+const FILES = 'recent_files';
+const HISTORY = 'history';
+const LEGACY_META = 'night_pdf_recent_meta';
 
-export function openDB() {
+function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = (event) => reject(event.target.error);
-    request.onsuccess = (event) => resolve(event.target.result);
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+    const request = indexedDB.open('NightPDF_DB', 2);
+    let blocked = false;
+    request.onblocked = () => {
+      blocked = true;
+      reject(new Error('Close other NightPDF tabs to update saved files.'));
+    };
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      if (blocked) request.result.close();
+      else resolve(request.result);
+    };
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      const history = db.createObjectStore(HISTORY, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(FILES)) {
+        db.createObjectStore(FILES, { keyPath: 'id' });
+        return;
       }
+      // Index legacy records once. Leave their original bytes and keys intact.
+      const scan = request.transaction.objectStore(FILES).openCursor();
+      scan.onsuccess = () => {
+        const cursor = scan.result;
+        if (!cursor) return;
+        const { id, name, size, totalPages, currentPage, lastReadTime } = cursor.value;
+        history.put({ id, name, size, totalPages, currentPage, lastReadTime });
+        cursor.continue();
+      };
     };
   });
 }
 
-export async function saveRecentFile(file, totalPages, currentPage) {
+async function transaction(stores, mode, start) {
+  const db = await openDB();
   try {
-    const db = await openDB();
-    
-    // Quota Protection: Retain only the 5 most recent files
-    const allFiles = await new Promise((resolve) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const req = store.getAllKeys();
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve([]); // ignore error, just don't delete
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(stores, mode);
+      let result;
+      let failure;
+      tx.oncomplete = () => resolve(result);
+      tx.onabort = () => reject(failure || tx.error || new Error('Storage operation failed.'));
+      start(tx, value => { result = value; }, error => { failure = error; tx.abort(); });
     });
-    
-    if (allFiles && allFiles.length >= 5) {
-      // Find oldest to delete
-      const records = await getRecentFiles(); // Already sorted by lastReadTime desc
-      if (records.length >= 5) {
-        const oldestFiles = records.slice(4); // Keep top 4, so we can insert 1
-        const delTransaction = db.transaction([STORE_NAME], 'readwrite');
-        const delStore = delTransaction.objectStore(STORE_NAME);
-        for (const oldFile of oldestFiles) {
-          delStore.delete(oldFile.id);
-        }
-      }
-    }
-
-    const id = `${file.name}-${file.size}`;
-    const arrayBuffer = await file.arrayBuffer();
-    
-    const fileRecord = {
-      id,
-      name: file.name,
-      size: file.size,
-      totalPages,
-      currentPage,
-      lastReadTime: Date.now(),
-      data: arrayBuffer
-    };
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.put(fileRecord);
-      request.onsuccess = () => resolve();
-      request.onerror = (event) => reject(event.target.error);
-    });
-  } catch (error) {
-    console.warn('IndexedDB Quota or Save Error. Disabling binary resume for this file.', error);
-    // Silent fallback: just save metadata so history still works without the binary
-    saveMetadataToLocalStorage(file.name, file.size, totalPages, currentPage);
+  } finally {
+    db.close();
   }
 }
 
-export async function updateLastReadPage(fileName, fileSize, currentPage) {
+function legacyHistory() {
   try {
-    const db = await openDB();
-    const id = `${fileName}-${fileSize}`;
-    
-    const record = await new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.get(id);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = (event) => reject(event.target.error);
-    });
-
-    if (!record) {
-      // If not in DB, update localStorage
-      saveMetadataToLocalStorage(fileName, fileSize, null, currentPage);
-      return;
-    }
-
-    record.currentPage = currentPage;
-    record.lastReadTime = Date.now();
-
-    await new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.put(record);
-      request.onsuccess = () => resolve();
-      request.onerror = (event) => reject(event.target.error);
-    });
-  } catch (error) {
-    console.error('Failed to update page in IndexedDB:', error);
-    saveMetadataToLocalStorage(fileName, fileSize, null, currentPage);
+    const entries = JSON.parse(localStorage.getItem(LEGACY_META) || '[]');
+    return Array.isArray(entries) ? entries.filter(e => e?.id).map(e => ({ ...e, isMetaOnly: true })) : [];
+  } catch {
+    return [];
   }
 }
 
 export async function getRecentFiles() {
+  const legacy = legacyHistory();
+  let saved;
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
-      request.onsuccess = () => {
-        const files = request.result || [];
-        // Sort by lastReadTime descending
-        files.sort((a, b) => b.lastReadTime - a.lastReadTime);
-        resolve(files);
-      };
-      request.onerror = (event) => reject(event.target.error);
+    saved = await transaction([HISTORY], 'readonly', (tx, done) => {
+      const request = tx.objectStore(HISTORY).getAll();
+      request.onsuccess = () => done(request.result);
     });
   } catch (error) {
-    console.error('Failed to read from IndexedDB, reading localStorage:', error);
-    return getMetadataFromLocalStorage();
+    console.warn('Saved PDFs unavailable.', error);
+    return legacy;
   }
+  const ids = new Set(saved.map(entry => entry.id));
+  return [...saved, ...legacy.filter(entry => !ids.has(entry.id))].sort((a,b) => b.lastReadTime - a.lastReadTime);
 }
 
-export async function deleteRecentFile(id) {
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.delete(id);
-      request.onsuccess = () => resolve();
-      request.onerror = (event) => reject(event.target.error);
+export function readSavedFile(id) {
+  return transaction([FILES], 'readonly', (tx, done) => {
+    const request = tx.objectStore(FILES).get(id);
+    request.onsuccess = () => done(request.result?.data);
+  });
+}
+
+export function saveRecentFile(id, file, totalPages, currentPage) {
+  return transaction([FILES, HISTORY], 'readwrite', (tx, done, abort) => {
+    const history = tx.objectStore(HISTORY);
+    const keys = history.getAllKeys();
+    keys.onsuccess = () => {
+      if (keys.result.length >= 5 && !keys.result.includes(id)) {
+        abort(new Error('Five PDFs are already saved. Forget one before saving another.'));
+        return;
+      }
+      tx.objectStore(FILES).put({ id, data: file });
+      history.put({ id, name: file.name, size: file.size, totalPages, currentPage, lastReadTime: Date.now() });
+      done(id);
+    };
+  });
+}
+
+export function updateLastReadPage(id, currentPage) {
+  return transaction([HISTORY], 'readwrite', tx => {
+    const history = tx.objectStore(HISTORY);
+    const request = history.get(id);
+    request.onsuccess = () => {
+      if (request.result) history.put({ ...request.result, currentPage, lastReadTime: Date.now() });
+    };
+  });
+}
+
+export async function deleteRecentFile(entry) {
+  if (!entry.isMetaOnly) {
+    await transaction([FILES, HISTORY], 'readwrite', tx => {
+      tx.objectStore(FILES).delete(entry.id);
+      tx.objectStore(HISTORY).delete(entry.id);
     });
-  } catch (error) {
-    console.error('Failed to delete from IndexedDB:', error);
   }
-}
-
-// LocalStorage Fallback helper functions
-function saveMetadataToLocalStorage(name, size, totalPages, currentPage) {
-  try {
-    const key = 'night_pdf_recent_meta';
-    const existing = localStorage.getItem(key);
-    let list = existing ? JSON.parse(existing) : [];
-    const id = `${name}-${size}`;
-    
-    const index = list.findIndex(item => item.id === id);
-    if (index > -1) {
-      list[index].currentPage = currentPage;
-      if (totalPages) list[index].totalPages = totalPages;
-      list[index].lastReadTime = Date.now();
-    } else {
-      list.push({
-        id,
-        name,
-        size,
-        totalPages: totalPages || 0,
-        currentPage,
-        lastReadTime: Date.now(),
-        isMetaOnly: true
-      });
-    }
-    // Sort and limit to 5
-    list.sort((a, b) => b.lastReadTime - a.lastReadTime);
-    list = list.slice(0, 5);
-    localStorage.setItem(key, JSON.stringify(list));
-  } catch (e) {
-    console.error('LocalStorage write failed:', e);
-  }
-}
-
-function getMetadataFromLocalStorage() {
-  try {
-    const key = 'night_pdf_recent_meta';
-    const existing = localStorage.getItem(key);
-    return existing ? JSON.parse(existing) : [];
-  } catch (e) {
-    return [];
+  const legacy = legacyHistory();
+  if (legacy.some(e => e.id === entry.id)) {
+    localStorage.setItem(LEGACY_META, JSON.stringify(legacy.filter(e => e.id !== entry.id)));
   }
 }

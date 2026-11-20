@@ -1,92 +1,91 @@
-// WorkerManager: pools Web Workers V2 Enterprise Engine (v3 cache invalidate)
-import { applyThemeToImageData } from '../utils/themeEngine';
+import { processSmartCanvas } from '../utils/smartPreservationEngine.js';
 
 class WorkerPool {
-  constructor(workerPath, poolSize = Math.min(navigator.hardwareConcurrency || 2, 4)) {
-    this.workerPath = workerPath;
-    this.poolSize = poolSize;
+  constructor() {
     this.workers = [];
     this.queue = [];
-    this.init();
+    this.started = false;
   }
 
-  init() {
+  start() {
+    if (this.started) return;
+    this.started = true;
     if (typeof window === 'undefined' || !window.Worker) return;
+    const size = Math.min(navigator.hardwareConcurrency || 2, 2);
     try {
-      for (let i = 0; i < this.poolSize; i++) {
+      for (let i = 0; i < size; i++) {
         const worker = new Worker(new URL('../workers/smartThemeWorker.js', import.meta.url), { type: 'module' });
-        this.workers.push({ worker, busy: false });
+        const slot = { worker, job: null };
+        worker.onmessage = ({ data }) => {
+          const job = slot.job;
+          if (!job) return;
+          try {
+            if (data.error) throw new Error(data.error);
+            job.resolve(new ImageData(new Uint8ClampedArray(data.buffer), job.width, job.height));
+          } catch (error) {
+            job.reject(error);
+          } finally {
+            slot.job = null;
+            this.queue.shift()?.();
+          }
+        };
+        worker.onerror = worker.onmessageerror = event => {
+          worker.terminate();
+          this.workers = this.workers.filter(other => other !== slot);
+          slot.job?.reject(new Error(event.message || 'The page color worker stopped.'));
+          slot.job = null;
+          // If the final worker died, every waiting caller must reach fallback.
+          this.queue.splice(0).forEach(wake => wake());
+        };
+        this.workers.push(slot);
       }
-    } catch (e) {
-      console.warn('Web Workers unavailable or blocked. Using synchronous fallback.', e);
-      this.workers = [];
+    } catch (error) {
+      console.warn('Could not start all page color workers.', error);
     }
   }
 
-  async processCanvas(imageData, theme, options = {}) {
-    if (this.workers.length === 0) {
-      // Synchronous fallback on main thread
-      return applyThemeToImageData(imageData, theme.id, {
-        mode: options.mode || 'smart',
-        brightness: options.brightness || 0,
-        contrast: options.contrast || 0,
-        customTheme: theme
+  async processCanvas(canvas, theme, options) {
+    this.start();
+    const { signal } = options;
+    signal?.throwIfAborted();
+    const settings = {
+      mode: options.mode ?? 'smart',
+      strength: options.strength ?? 100,
+      brightness: options.brightness ?? 0,
+      contrast: options.contrast ?? 0
+    };
+    let slot;
+    while (this.workers.length && !(slot = this.workers.find(entry => !entry.job))) {
+      await new Promise((resolve, reject) => {
+        const wake = () => {
+          signal?.removeEventListener('abort', abort);
+          resolve();
+        };
+        const abort = () => {
+          this.queue = this.queue.filter(item => item !== wake);
+          reject(signal.reason);
+        };
+        this.queue.push(wake);
+        signal?.addEventListener('abort', abort, { once: true });
       });
+      signal?.throwIfAborted();
     }
-
-    // Find available worker
-    let freeWorker = this.workers.find(w => !w.busy);
-    if (!freeWorker) {
-      // Wait for queue
-      await new Promise(resolve => this.queue.push(resolve));
-      freeWorker = this.workers.find(w => !w.busy) || this.workers[0];
-    }
-
-    freeWorker.busy = true;
-    const worker = freeWorker.worker;
+    const image = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    if (!slot) return processSmartCanvas(image, theme, settings);
 
     return new Promise((resolve, reject) => {
-      const handleMessage = (e) => {
-        worker.removeEventListener('message', handleMessage);
-        worker.removeEventListener('error', handleError);
-        freeWorker.busy = false;
-
-        // Process next in queue
-        if (this.queue.length > 0) {
-          const next = this.queue.shift();
-          next();
-        }
-
-        const newArr = new Uint8ClampedArray(e.data.buffer);
-        const newImgData = new ImageData(newArr, imageData.width, imageData.height);
-        resolve(newImgData);
-      };
-
-      const handleError = (err) => {
-        worker.removeEventListener('message', handleMessage);
-        worker.removeEventListener('error', handleError);
-        freeWorker.busy = false;
-        if (this.queue.length > 0) this.queue.shift()();
-        reject(err);
-      };
-
-      worker.addEventListener('message', handleMessage);
-      worker.addEventListener('error', handleError);
-
-      // Post buffer via transferable arraybuffer
-      worker.postMessage({
-        buffer: imageData.data.buffer,
-        width: imageData.width,
-        height: imageData.height,
-        theme: theme,
-        mode: options.mode || 'smart',
-        strength: options.strength !== undefined ? options.strength : 100,
-        threshold: options.threshold !== undefined ? options.threshold : 50,
-        brightness: options.brightness || 0,
-        contrast: options.contrast || 0
-      }, [imageData.data.buffer]);
+      const { width, height } = image;
+      slot.job = { resolve, reject, width, height };
+      try {
+        const buffer = image.data.buffer;
+        slot.worker.postMessage({ buffer, width, height, theme, settings }, [buffer]);
+      } catch (error) {
+        slot.job = null;
+        this.queue.shift()?.();
+        reject(error);
+      }
     });
   }
 }
 
-export const globalWorkerPool = new WorkerPool('../workers/smartThemeWorker.js');
+export const globalWorkerPool = new WorkerPool();

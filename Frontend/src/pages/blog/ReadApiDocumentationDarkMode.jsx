@@ -276,7 +276,7 @@ export default function ReadApiDocumentationDarkMode() {
                       <td className="py-3 pr-4 font-medium text-white">NightPDF Reader</td>
                       <td className="py-3 px-4 font-light text-zinc-200 font-medium">Excellent (slate/sepia)</td>
                       <td className="py-3 px-4 font-light text-zinc-200 font-medium">100% Secure (local)</td>
-                      <td className="py-3 px-4 font-light text-zinc-200 font-medium">Yes</td>
+                      <td className="py-3 px-4 font-light text-zinc-200 font-medium">When cached</td>
                       <td className="py-3 px-4 font-light text-zinc-200 font-medium">Clear (preserves colors)</td>
                       <td className="py-3 pl-4 font-light text-zinc-200 font-medium">Highly recommended for docs</td>
                     </tr>
@@ -480,7 +480,7 @@ export default function ReadApiDocumentationDarkMode() {
                 <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6">
                   <h4 className="font-display font-bold text-white text-sm mb-2">Can I use NightPDF offline?</h4>
                   <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed">
-                    Yes. Because NightPDF runs entirely client-side using in-browser processing, you can open the app and read files without an active internet connection.
+                    Offline use depends on the browser retaining the app and its PDF workers. Open the reader online first. Reconnect if an asset is missing.
                   </p>
                 </div>
 

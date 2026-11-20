@@ -18,23 +18,23 @@ const faqs = [
   {
     question: "How does Night PDF convert PDFs to dark mode?",
     answer:
-      "Night PDF uses an advanced client-side HSL color lightness inversion algorithm. It converts bright white page backgrounds into deep dark themes or warm sepia tones, while intelligently preserving the original colors of diagrams, charts, photographs, and syntax-highlighted code. This ensures maximum readability without ruining visual assets.",
+      "NightPDF renders each page locally and maps its colors to the selected reading theme. Photographs and diagrams can also change appearance.",
   },
   {
     question:
       "Is Night PDF safe? Are my private documents uploaded to any servers?",
     answer:
-      "Yes, it is 100% secure. Unlike conventional online PDF converters that process your files on remote cloud servers, Night PDF does all processing locally inside your web browser. No files are uploaded, stored, or indexed. Your private study materials, legal papers, and books never leave your device.",
+      "PDF processing happens on your device. Opening a PDF is session-only. Choose Remember this PDF to save a full copy in this browser.",
   },
   {
     question: "Does Night PDF support offline reading?",
     answer:
-      "Absolutely. Night PDF is built as a Progressive Web App (PWA). Once you visit the site, all resources are cached locally. You can bookmark the application and open it to read, adjust themes, and convert PDFs even without an active internet connection or in airplane mode.",
+      "Offline use depends on the browser retaining the app and its PDF workers. Open the reader online first. Reconnect if an asset is missing.",
   },
   {
     question: "Is Night PDF free? Are there any size or page count limits?",
     answer:
-      "Night PDF is completely free with no registration, subscriptions, watermarks, or premium barriers. You can load and process documents of any file size or page count. The tool is free and open to everyone, including students, developers, and researchers.",
+      "Night PDF is completely free with no registration, subscriptions, watermarks, or premium barriers. New uploads can be up to 50 MiB. Large themed exports may require a smaller page range. The tool is free and open to everyone, including students, developers, and researchers.",
   },
   {
     question: "What eye-friendly themes are available in Night PDF?",
@@ -49,7 +49,7 @@ const faqs = [
   {
     question: "How do I download the converted dark mode PDF?",
     answer:
-      "Once you have selected a theme and adjusted the rendering sliders (like brightness and contrast) to your liking, click the 'Download Eye-Friendly PDF' button in the sidebar. The application will compile the updated styling details and save a new PDF file directly to your downloads folder.",
+      "Select Apply reading theme to download, choose the resolution and pages, then download. Themed exports contain image pages. Download original PDF preserves every original page and its contents.",
   },
   {
     question: "Can I convert only a specific page range of my PDF?",
@@ -57,14 +57,14 @@ const faqs = [
       "Yes. In the Left Config Panel, under the Download Settings, you can switch from 'Convert All Pages' to 'Page Range'. Enter your desired pages (for example, '1-5, 8, 11-15') and the downsampled PDF will only include those inverted pages, saving file size and compilation time.",
   },
   {
-    question: "How do I adjust image brightness, contrast, and text boldness?",
+    question: "How do I adjust brightness and theme intensity?",
     answer:
-      "The sidebar features adjustment sliders. If text is faint, increase the contrast and boldness. If the document remains too bright, lower the brightness slider. The engine applies CSS filters and pixel offsets in real-time, giving you total fine-grained control over document readability.",
+      "Open Reading adjustments under the theme selector. Adjust brightness or intensity. If text and paper approach the same shade, choose Use high-contrast Dark.",
   },
   {
     question: "Why do some images or pages look inverted incorrectly?",
     answer:
-      "Night PDF uses a HSL-based 'Smart' rendering engine which filters out images and non-white backgrounds. If a page has complex graphical layouts that render poorly, you can toggle the mode from 'Smart' to 'Original' (no color inversion) or tune the brightness and contrast sliders in the sidebar for that particular page.",
+      "Themes recolor pixels across the page, including diagrams and photographs. Select Original when exact colors matter.",
   },
 ];
 
@@ -207,12 +207,10 @@ export default function FAQPage() {
                 <CloudOff className="w-5 h-5" />
               </div>
               <h3 className="font-display font-bold text-white text-lg">
-                Works Offline
+                Cached reading
               </h3>
               <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-light">
-                Built as a modern PWA utility. Save it directly to your mobile
-                home screen or bookmark it. The tool runs seamlessly in airplane
-                mode or deep off-grid locations.
+                Offline use depends on the browser retaining the app and its PDF workers. Open the reader online first. Reconnect if an asset is missing.
               </p>
             </motion.div>
 
@@ -321,7 +319,7 @@ export default function FAQPage() {
                 <Check className="w-4 h-4 text-white" /> No Uploads
               </span>
               <span className="flex items-center gap-1.5 font-medium text-zinc-300">
-                <Check className="w-4 h-4 text-white" /> 100% Offline
+                <Check className="w-4 h-4 text-white" /> Local processing
               </span>
               <span className="flex items-center gap-1.5 font-medium text-zinc-300">
                 <Check className="w-4 h-4 text-white" /> AMOLED Themes

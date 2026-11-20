@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import UploadZone from './UploadZone';
-import { Clock, Play } from 'lucide-react';
+
 
 const HeroVideo = () => {
   const [isLoaded, setIsLoaded] = React.useState(false);
@@ -27,18 +27,16 @@ const HeroVideo = () => {
         muted
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
         onCanPlay={() => setIsLoaded(true)}
       >
-        <source src="/hero-demo.webm" type="video/webm" />
         <source src="/hero-demo.mp4" type="video/mp4" />
       </video>
     </motion.div>
   );
 };
 
-export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, onResumeSession }) {
-  const lastSession = recentFiles && recentFiles.length > 0 ? recentFiles[0] : null;
+export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, onResume, onForget, opening }) {
 
   return (
     <div className="w-full flex-1 bg-black text-white pb-32 pt-16 sm:pt-24 px-5 overflow-y-auto">
@@ -65,35 +63,6 @@ export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, 
           <p className="text-zinc-500">All processing happens locally in your browser.</p>
         </motion.div>
 
-        {/* Hero Video */}
-        <HeroVideo />
-
-        {/* Resume Session Card */}
-        {lastSession && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.12 }}
-            className="w-full max-w-xl mx-auto mb-6 bg-[#111113] border border-white/10 rounded-2xl p-5 text-left flex items-center justify-between cursor-pointer hover:border-white/20 transition-all shadow-xl"
-            onClick={() => onResumeSession(lastSession)}
-          >
-            <div className="flex items-center gap-4 overflow-hidden">
-              <div className="bg-white/5 p-3 rounded-xl shrink-0">
-                <Clock className="w-6 h-6 text-emerald-400" />
-              </div>
-              <div className="overflow-hidden">
-                <h3 className="text-white font-semibold text-sm truncate mb-1">Resume Previous Session</h3>
-                <p className="text-zinc-400 text-xs truncate">
-                  {lastSession.name} • Page {lastSession.currentPage || 1}
-                </p>
-              </div>
-            </div>
-            <button className="bg-white text-black px-4 py-2 rounded-lg font-bold text-xs shrink-0 flex items-center gap-2 hover:bg-zinc-200 transition-colors">
-              <Play className="w-3 h-3 fill-black" /> Resume
-            </button>
-          </motion.div>
-        )}
-
         {/* Primary Upload CTA */}
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -104,6 +73,15 @@ export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, 
           <UploadZone onFileSelected={onFileSelected} errorMsg={errorMsg} />
         </motion.div>
 
+        {opening && <p role="status">Opening PDF…</p>}
+        {recentFiles.length > 0 && <section className="mb-8 w-full max-w-xl text-left"><h2>Saved on this device</h2>
+          {recentFiles.map(entry => <div key={entry.id} className="flex items-center gap-3 border-b border-zinc-800 py-2">
+            <span className="min-w-0 flex-1 break-words">{entry.name} · p. {entry.currentPage || 1}</span>
+            {entry.isMetaOnly ? <span className="text-xs">History only · reopen the original file</span> :
+              <button className="underline" onClick={() => onResume(entry)}>Resume</button>}
+            <button aria-label={'Forget ' + entry.name} onClick={() => onForget(entry)}>Forget</button>
+          </div>)}</section>}
+        <HeroVideo />
         {/* Trust Bar */}
         <motion.div 
           initial={{ opacity: 0 }}
@@ -113,7 +91,7 @@ export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, 
         >
           <div className="flex items-center gap-2"><span className="text-emerald-500">✓</span> 100% Local</div>
           <div className="flex items-center gap-2"><span className="text-emerald-500">✓</span> No Uploads</div>
-          <div className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Works Offline</div>
+          <div className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Session-only by default</div>
           <div className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Private By Design</div>
         </motion.div>
 
@@ -158,28 +136,6 @@ export default function EmptyStateHero({ onFileSelected, errorMsg, recentFiles, 
           </p>
         </motion.div>
 
-        {/* Ecosystem Preview Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="w-full max-w-4xl mx-auto mb-10 flex flex-col items-center text-center"
-        >
-          <h2 className="text-[11px] font-bold tracking-widest uppercase text-zinc-500 mb-6">
-            Coming Soon
-          </h2>
-          <div className="flex flex-wrap justify-center items-center gap-4">
-            {['PDF Summaries', 'AI Notes', 'Research Workspace', 'Reading Analytics'].map((pill, idx) => (
-              <div 
-                key={idx} 
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/[0.06] bg-zinc-950 shadow-md backdrop-blur-md"
-              >
-                <span className="text-emerald-500 text-sm">✓</span>
-                <span className="text-[12px] font-bold text-zinc-300 tracking-wide">{pill}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
 
       </div>
     </div>

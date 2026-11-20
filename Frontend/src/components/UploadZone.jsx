@@ -1,77 +1,34 @@
-import React, { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { UploadCloud } from 'lucide-react';
 
 export default function UploadZone({ onFileSelected, errorMsg }) {
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef(null);
+  const picker = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [validation, setValidation] = useState('');
+  function select(files) {
+    if (!files.length) return;
+    const file = files[0];
+    let message = '';
+    if (files.length !== 1) message = 'Choose one PDF at a time.';
+    else if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') message = 'Choose a PDF file.';
+    else if (!file.size) message = 'This file is empty.';
+    else if (file.size > 50 * 1024 ** 2) message = 'Choose a PDF smaller than or equal to 50 MiB.';
+    setValidation(message);
+    if (!message) onFileSelected(file);
+  }
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-      onFileSelected(file);
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      onFileSelected(file);
-    }
-  };
-
-  return (
-    <div 
-      className={`relative group w-full max-w-2xl mx-auto p-4 sm:px-6 rounded-2xl border flex items-center justify-between gap-4 cursor-pointer transition-all duration-200 ease-out ${
-        isDragging 
-          ? 'border-white bg-white/10' 
-          : 'border-white/[0.08] bg-zinc-950 hover:-translate-y-[2px] hover:border-white/[0.15] hover:bg-zinc-900'
-      }`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={() => fileInputRef.current.click()}
-    >
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        accept="application/pdf" 
-        className="hidden"
-      />
-      
-      <div className="flex items-center gap-4">
-        <div className={`p-2.5 rounded-xl transition-colors ${isDragging ? 'bg-white text-black' : 'bg-white/10 text-white group-hover:bg-white group-hover:text-black'}`}>
-          <UploadCloud size={20} />
-        </div>
-        <div className="text-left">
-          <h3 className="font-display font-bold text-white text-base">Upload PDF</h3>
-          <p className="text-zinc-400 text-[13px]">Drag & drop or click to browse</p>
-        </div>
-      </div>
-      
-      <div className="hidden sm:block text-right">
-        <span className="text-zinc-500 text-xs font-medium px-3 py-1.5 rounded-lg border border-white/5 bg-white/5">
-          Up to 50MB
-        </span>
-      </div>
-      
-      {errorMsg && (
-        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-red-500 text-xs font-medium whitespace-nowrap">
-          ⚠️ {errorMsg}
-        </div>
-      )}
-    </div>
-  );
+  return <div onDragOver={e => { e.preventDefault(); setDragging(true); }}
+    onDragLeave={() => setDragging(false)} onDrop={e => {
+      e.preventDefault(); setDragging(false); select(e.dataTransfer.files);
+    }}>
+    <input hidden ref={picker} type="file" accept=".pdf,application/pdf" onChange={e => {
+      select(e.target.files); e.target.value = '';
+    }} />
+    <button type="button" className={'w-full rounded-xl border p-5 text-left focus-visible:outline ' +
+      (dragging ? 'border-blue-400' : 'border-zinc-700 bg-zinc-900')} onClick={() => picker.current.click()}>
+      <UploadCloud className="mr-3 inline" /> Open PDF
+      <span className="mt-2 block text-sm text-zinc-400">Choose or drop one PDF · up to 50 MiB</span>
+    </button>
+    {(validation || errorMsg) && <p className="mt-2 text-rose-300" role="alert">{validation || errorMsg}</p>}
+  </div>;
 }

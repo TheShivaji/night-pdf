@@ -229,7 +229,7 @@ export default function ConvertPdfOnMobile() {
                 Struggling with menu trees and heavy application sizes? You can use **Night PDF** as a Progressive Web App (PWA) on your phone.
               </p>
               <p className="text-zinc-300 leading-relaxed font-light">
-                Simply visit <a href="https://pdf.theshivaji.in" className="text-white underline">pdf.theshivaji.in</a> in Safari or Chrome on your phone. Tap the share sheet on iOS and select "Add to Home Screen", or click the "Install App" button in Chrome for Android. Once installed, it runs as a standalone app with no address bar, letting you read PDFs offline in AMOLED Black, Sepia, or custom themes.
+                Simply visit <a href="https://pdf.theshivaji.in" className="text-white underline">pdf.theshivaji.in</a> in Safari or Chrome on your phone. Tap the share sheet on iOS and select "Add to Home Screen", or click the "Install App" button in Chrome for Android. Once installed, it runs as a standalone app with no address bar, with offline reading available when the reader assets and workers are cached.
               </p>
               <p className="text-zinc-300 leading-relaxed font-light">
                 To learn more about optimizing screen parameters for night reading, visit our guide on <Link to="/blog/how-to-read-pdf-at-night" className="text-white underline hover:text-zinc-200">how to read PDFs at night without eye strain</Link>.
@@ -253,7 +253,7 @@ export default function ConvertPdfOnMobile() {
                 <div className="rounded-2xl border border-white/5 bg-zinc-950 p-6">
                   <h4 className="font-display font-bold text-white text-sm mb-2">Can I open local files inside a PWA when offline?</h4>
                   <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed">
-                    Yes. PWAs cache their assets locally, meaning the application logic is loaded from your device. When you select a PDF file, your browser reads it directly from your local filesystem—no internet connection is required.
+                    Offline use depends on the browser retaining the app and its PDF workers. Open the reader online first. Reconnect if an asset is missing.
                   </p>
                 </div>
 
@@ -311,7 +311,7 @@ export default function ConvertPdfOnMobile() {
                   <Check className="w-3.5 h-3.5 text-white" /> Dark Mode
                 </span>
                 <span className="flex items-center gap-1.5 font-medium text-zinc-300">
-                  <Check className="w-3.5 h-3.5 text-white" /> Works Offline
+                  <Check className="w-3.5 h-3.5 text-white" /> Local processing
                 </span>
               </div>
               <div className="mt-8 flex justify-center">

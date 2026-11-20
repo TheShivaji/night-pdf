@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Sidebar from './components/Sidebar';
@@ -6,10 +6,8 @@ import PDFViewer from './components/PDFViewer';
 import EmptyStateHero from './components/EmptyStateHero';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import BenchmarkHUD from './components/BenchmarkHUD';
 import { loadPdfDocument, convertPdfTheme, getPdfOutline } from './utils/pdfProcessor';
-import { saveRecentFile, updateLastReadPage, getRecentFiles, deleteRecentFile } from './utils/db';
-import { DocumentProfiler } from './processors/DocumentProfiler';
+import { readSavedFile, saveRecentFile, updateLastReadPage, getRecentFiles, deleteRecentFile } from './utils/db';
 
 // Import core pages
 import FAQPage from './pages/FAQPage';
@@ -26,366 +24,207 @@ import ConvertPdfOnMobile from './pages/blog/ConvertPdfOnMobile';
 import DarkModeVsLightMode from './pages/blog/DarkModeVsLightMode';
 import ReadApiDocumentationDarkMode from './pages/blog/ReadApiDocumentationDarkMode';
 
-function ReaderWorkspace() {
-  // File & Document States
-  const [file, setFile] = useState(null);
-  const [pdfDoc, setPdfDoc] = useState(null);
-  const [numPages, setNumPages] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [zoomMode, setZoomMode] = useState(() => loadSetting('zoomMode', 'fit-width'));
-  const [zoom, setZoom] = useState(() => loadSetting('zoom', 1.0));
-
-  // Configuration States
-  function loadSetting(key, defaultVal) {
-    try {
-      const stored = localStorage.getItem('nightpdf_settings');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed[key] !== undefined) return parsed[key];
-      }
-    } catch (e) {}
-    return typeof defaultVal === 'function' ? defaultVal() : defaultVal;
-  };
-
-  const [selectedTheme, setSelectedTheme] = useState(() => loadSetting('selectedTheme', 'dark'));
-  const [customTheme, setCustomTheme] = useState({
-    bgHex: '#1a1a1a',
-    fgHex: '#f3f4f6',
-    bg: { r: 26, g: 26, b: 26 },
-    fg: { r: 243, g: 244, b: 246 }
-  });
-  const [mode, setMode] = useState(() => loadSetting('mode', 'smart')); 
-  const [themeStrength, setThemeStrength] = useState(() => loadSetting('themeStrength', 100));
-  const [adaptiveThreshold, setAdaptiveThreshold] = useState(() => loadSetting('adaptiveThreshold', 50));
-  const [docProfile, setDocProfile] = useState(() => loadSetting('docProfile', 'mixed'));
-
-  const [quality, setQuality] = useState(2.0); 
-  const [brightness, setBrightness] = useState(() => loadSetting('brightness', 0)); 
-  const [contrast, setContrast] = useState(() => loadSetting('contrast', 0)); 
-  const [boldness, setBoldness] = useState(() => loadSetting('boldness', 0)); 
-
-  // Download settings
-  const [downloadMode, setDownloadMode] = useState('all'); // 'all' | 'range'
-  const [pagesToConvertStr, setPagesToConvertStr] = useState('');
-
-  // Book & Fullscreen view modes
-  const [isBookMode, setIsBookMode] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(() => loadSetting('isFullscreen', false));
-
-  // UI Flow States
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => loadSetting('isSidebarOpen', window.innerWidth > 768));
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
-  const [errorMsg, setErrorMsg] = useState('');
-  const [recentFiles, setRecentFiles] = useState([]);
-  const [outline, setOutline] = useState([]);
-
-  // Telemetry HUD stats
-  const [renderLatency, setRenderLatency] = useState(12);
-
-  // Save Settings
-  useEffect(() => {
-    try {
-      localStorage.setItem('nightpdf_settings', JSON.stringify({
-        selectedTheme, mode, themeStrength, adaptiveThreshold, docProfile, brightness, contrast, boldness,
-        zoomMode, zoom, isSidebarOpen, isFullscreen
-      }));
-    } catch (e) {}
-  }, [selectedTheme, mode, themeStrength, adaptiveThreshold, docProfile, brightness, contrast, boldness, zoomMode, zoom, isSidebarOpen, isFullscreen]);
-
-  // 1. Register PWA Service Worker on mount & Load Recent Files
-  useEffect(() => {
-    if ('serviceWorker' in navigator && import.meta.env.PROD) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((reg) => console.log('Night PDF ServiceWorker registered:', reg.scope))
-          .catch((err) => console.error('Night PDF ServiceWorker failed:', err));
-      });
-    }
-    refreshRecentFiles();
-  }, []);
-
-  const refreshRecentFiles = async () => {
-    try {
-      const list = await getRecentFiles();
-      setRecentFiles(list);
-    } catch (err) {
-      console.error('Failed to refresh recent files:', err);
-    }
-  };
-
-  useEffect(() => {
-    const handleResize = () => {
-      const mobileStatus = window.innerWidth <= 768;
-      setIsMobile(mobileStatus);
-      if (!mobileStatus) setIsSidebarOpen(true);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (isFullscreen && !isMobile) setIsSidebarOpen(false);
-    else if (!isFullscreen && !isMobile) setIsSidebarOpen(true);
-  }, [isFullscreen, isMobile]);
-
-  useEffect(() => {
-    if (file && pdfDoc && currentPage) {
-      updateLastReadPage(file.name, file.size, currentPage)
-        .then(() => refreshRecentFiles())
-        .catch(err => console.error('Error saving reading progress:', err));
-    }
-  }, [currentPage, file, pdfDoc]);
-
-  const processUploadedFile = async (selectedFile, startPage = 1) => {
-    try {
-      setFile(selectedFile);
-      setPdfDoc(null);
-      setCurrentPage(startPage);
-      setErrorMsg('');
-      
-      const doc = await loadPdfDocument(selectedFile);
-      setPdfDoc(doc);
-      setNumPages(doc.numPages);
-
-      await saveRecentFile(selectedFile, doc.numPages, startPage);
-      await refreshRecentFiles();
-
-      try {
-        const toc = await getPdfOutline(doc);
-        setOutline(toc);
-        const profile = DocumentProfiler.analyzeDocumentMetadata(doc.numPages, toc, selectedFile.name);
-        setDocProfile(profile.id);
-        if (profile.threshold) setAdaptiveThreshold(profile.threshold);
-      } catch (e) {
-        setOutline([]);
-      }
-
-      const firstPage = await doc.getPage(1);
-      const originalViewport = firstPage.getViewport({ scale: 1.0 });
-      const sidebarWidth = window.innerWidth <= 768 ? 0 : 380;
-      const viewerPadding = window.innerWidth <= 768 ? 24 : 80;
-      const availableWidth = window.innerWidth - sidebarWidth - viewerPadding;
-      
-      const fitZoom = Math.min(1.8, Math.max(0.4, availableWidth / originalViewport.width));
-      setZoom(Number(fitZoom.toFixed(2)));
-
-      if (isMobile) setIsSidebarOpen(false);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Failed to parse PDF. The file may be corrupted.');
-      setFile(null);
-    }
-  };
-
-  const handleResumeSession = async (recentFileRecord) => {
-    try {
-      if (!recentFileRecord || !recentFileRecord.data) throw new Error('No valid PDF data.');
-      const reconstructedFile = new File([recentFileRecord.data], recentFileRecord.name, {
-        type: 'application/pdf',
-        lastModified: recentFileRecord.lastReadTime || Date.now()
-      });
-      await processUploadedFile(reconstructedFile, recentFileRecord.currentPage || 1);
-    } catch (err) {
-      if (recentFileRecord?.id) handleDeleteRecent(recentFileRecord.id);
-    }
-  };
-
-  const clearFile = () => {
-    setFile(null);
-    setPdfDoc(null);
-    setNumPages(0);
-    setCurrentPage(1);
-    setZoom(1.0);
-    setErrorMsg('');
-    setBrightness(0);
-    setContrast(0);
-    setBoldness(0);
-    setOutline([]);
-    refreshRecentFiles();
-    if (isMobile) setIsSidebarOpen(false);
-  };
-
-  const handleDeleteRecent = async (id, e) => {
-    if (e) e.stopPropagation();
-    try {
-      await deleteRecentFile(id);
-      await refreshRecentFiles();
-    } catch (err) {}
-  };
-
-  const parsePageRange = (rangeStr, maxPages) => {
+const parsePageRange = (input, maxPage) => {
     const pages = new Set();
-    const parts = rangeStr.split(',');
-    for (let part of parts) {
-      part = part.trim();
-      if (!part) continue;
-      if (part.includes('-')) {
-        const [startStr, endStr] = part.split('-');
-        const start = parseInt(startStr, 10), end = parseInt(endStr, 10);
-        if (!isNaN(start) && !isNaN(end)) {
-          const s = Math.max(1, Math.min(start, maxPages)), e = Math.max(1, Math.min(end, maxPages));
-          for (let i = Math.min(s, e); i <= Math.max(s, e); i++) pages.add(i);
-        }
-      } else {
-        const page = parseInt(part, 10);
-        if (!isNaN(page) && page >= 1 && page <= maxPages) pages.add(page);
+    for (const part of input.split(',')) {
+      const match = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(part.trim());
+      const first = Number(match?.[1]);
+      const last = Number(match?.[2] ?? first);
+      if (!match || first < 1 || last < first || last > maxPage) {
+        throw new Error(`Invalid page range. Enter pages from 1 to ${maxPage}, such as 1 or 1-${maxPage}.`);
       }
+      for (let page = first; page <= last; page++) pages.add(page);
     }
-    return Array.from(pages).sort((a, b) => a - b);
+    return [...pages].sort((a, b) => a - b);
   };
 
+
+function ReaderWorkspace() {
+  const [settings, setSettings] = useState(() => {
+    let old = {};
+    try { old = JSON.parse(localStorage.getItem('nightpdf_settings')) || {}; }
+    catch { /* Preferences are optional. */ }
+    return {
+      selectedTheme: old.mode === 'original' ? 'normal' : old.selectedTheme || 'dark',
+      themeStrength: old.themeStrength ?? 100, brightness: old.brightness ?? 0,
+      customTheme: old.customTheme || { bgHex: '#1a1a1a', fgHex: '#f3f4f6', bg: {r:26,g:26,b:26}, fg: {r:243,g:244,b:246} }
+    };
+  });
+  useEffect(() => {
+    try { localStorage.setItem('nightpdf_settings', JSON.stringify(settings)); }
+    catch { /* Reading works with browser storage disabled. */ }
+  }, [settings]);
+
+  const [opened, setOpened] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [outline, setOutline] = useState([]);
+  const [recentFiles, setRecentFiles] = useState([]);
+  const [savedId, setSavedId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 768);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [opening, setOpening] = useState(false);
+  const [progress, setProgress] = useState(null);
   const [exportSmartTheme, setExportSmartTheme] = useState(false);
+  const [quality, setQuality] = useState(3);
+  const [downloadMode, setDownloadMode] = useState('all');
+  const [pagesToConvertStr, setPagesToConvertStr] = useState('');
+  const session = useRef(0);
+  const activeDoc = useRef(null);
+  const exportJob = useRef(null);
+  const historyRead = useRef(null);
+  const rememberJob = useRef(null);
+  const sessionKey = useRef(null);
 
-  const handleDownload = async () => {
-    if (!pdfDoc || !file) return;
+  function releaseDocument() {
+    session.current++;
+    exportJob.current?.abort();
+    exportJob.current = null;
+    rememberJob.current = null;
+    const previous = activeDoc.current;
+    activeDoc.current = null;
+    previous?.loadingTask.destroy().catch(error => console.warn('PDF cleanup:', error));
+  }
+
+  async function refreshHistory() {
+    const read = Symbol();
+    historyRead.current = read;
+    const list = await getRecentFiles();
+    if (historyRead.current === read) setRecentFiles(list);
+  }
+  useEffect(() => {
+    refreshHistory();
+    const media = window.matchMedia('(max-width: 768px)');
+    const resize = () => { setIsMobile(media.matches); setIsSidebarOpen(!media.matches); };
+    media.addEventListener('change', resize);
+    return () => { media.removeEventListener('change', resize); releaseDocument(); historyRead.current = null; };
+  }, []);
+
+  useEffect(() => {
+    if (!savedId) return;
+    const owner = session.current;
+    updateLastReadPage(savedId, currentPage).catch(() => {
+      if (owner === session.current) setErrorMsg('Could not save your reading position. You can continue reading.');
+    });
+  }, [savedId, currentPage]);
+
+  function clearFile() {
+    releaseDocument();
+    setOpened(null); setSavedId(null); setOutline([]); setErrorMsg('');
+    setOpening(false); setProgress(null); setSaving(false); setCurrentPage(1);
+    setDownloadMode('all'); setPagesToConvertStr('');
+    void refreshHistory();
+  }
+
+  async function openFile(file, entry) {
+    clearFile();
+    const owner = session.current;
+    setOpening(true);
     try {
-      setIsProcessing(true);
-      setErrorMsg('');
-
-      let pdfBytes;
-      if (!exportSmartTheme) {
-        // Requirement 12: Export original document unchanged unless explicitly selected
-        pdfBytes = await file.arrayBuffer();
-      } else {
-        let pageRange = [];
-        if (downloadMode === 'range' && pagesToConvertStr.trim()) {
-          pageRange = parsePageRange(pagesToConvertStr, numPages);
-          if (pageRange.length === 0) throw new Error('Invalid page range.');
-        }
-
-        pdfBytes = await convertPdfTheme(pdfDoc, selectedTheme, { 
-          mode, 
-          strength: themeStrength,
-          threshold: adaptiveThreshold,
-          scale: quality, 
-          brightness, 
-          contrast,
-          boldness,
-          pageRange,
-          customTheme: selectedTheme === 'custom' ? customTheme : undefined
-        }, (p) => setProgress(p));
+      if (!file) {
+        const data = await readSavedFile(entry.id);
+        if (owner !== session.current) return;
+        if (!data) throw new Error('Saved bytes are unavailable. Choose the original PDF.');
+        file = new File([data], entry.name, { type: 'application/pdf' });
       }
+      const doc = await loadPdfDocument(file);
+      if (owner !== session.current) { await doc.loadingTask.destroy(); return; }
+      activeDoc.current = doc;
+      sessionKey.current = entry && !entry.isMetaOnly ? entry.id : null;
+      setSavedId(entry && !entry.isMetaOnly ? entry.id : null);
+      setCurrentPage(Math.min(doc.numPages, Math.max(1, Number(entry?.currentPage) || 1)));
+      setOpened({ file, doc });
+      setIsSidebarOpen(window.innerWidth > 768);
+      getPdfOutline(doc).then(items => { if (session.current === owner) setOutline(items); });
+    } catch (error) {
+      if (owner === session.current) setErrorMsg(error.name === 'PasswordException'
+        ? 'This PDF is password-protected. Open an unlocked copy.'
+        : 'Could not open this PDF. Choose the original file or an undamaged copy.');
+    } finally {
+      if (owner === session.current) setOpening(false);
+    }
+  }
 
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+  async function remember() {
+    if (!opened || rememberJob.current || savedId) return;
+    const owner = session.current;
+    rememberJob.current = owner;
+    setSaving(true); setErrorMsg('');
+    try {
+      let key = sessionKey.current;
+      if (!key) {
+        const digest = await crypto.subtle.digest('SHA-256', await opened.file.arrayBuffer());
+        key = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+      }
+      if (session.current !== owner) return;
+      const id = await saveRecentFile(key, opened.file, opened.doc.numPages, currentPage);
+      if (owner === session.current) setSavedId(id);
+      await refreshHistory();
+    } catch (error) {
+      if (session.current === owner) setErrorMsg('Could not save this PDF on this device. ' + error.message);
+    } finally {
+      if (session.current === owner) { rememberJob.current = null; setSaving(false); }
+    }
+  }
+
+  async function forget(entry) {
+    const owner = session.current;
+    try {
+      await deleteRecentFile(entry);
+      if (owner === session.current && entry.id === savedId) setSavedId(null);
+      await refreshHistory();
+    } catch (error) {
+      if (session.current === owner) setErrorMsg('Could not forget this saved file. ' + error.message);
+    }
+  }
+
+  async function handleDownload() {
+    if (!opened || exportJob.current) return;
+    const controller = new AbortController();
+    exportJob.current = controller;
+    const { signal } = controller;
+    setErrorMsg('');
+    try {
+      let blob = opened.file;
+      if (exportSmartTheme) {
+        const pageRange = downloadMode === 'range' ? parsePageRange(pagesToConvertStr, opened.doc.numPages) : [];
+        setProgress({ status: 'Preparing pages…' });
+        const bytes = await convertPdfTheme(opened.doc, settings.selectedTheme, {
+          strength: settings.themeStrength, brightness: settings.brightness, customTheme: settings.customTheme,
+          scale: quality, pageRange, signal
+        }, p => { if (!signal.aborted) setProgress(p); });
+        signal.throwIfAborted();
+        blob = new Blob([bytes], { type: 'application/pdf' });
+      }
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = !exportSmartTheme ? file.name : `night-${selectedTheme}-${file.name}`;
+      link.href = url; link.download = exportSmartTheme ? `night-${settings.selectedTheme}-${opened.file.name}` : opened.file.name;
       document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setErrorMsg(err.message || 'Error generating PDF.');
+      try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    } catch (error) {
+      if (!signal.aborted) setErrorMsg(`Download failed. ${error.message}`);
     } finally {
-      setIsProcessing(false);
-      setProgress({ current: 0, total: 0, status: '' });
+      if (exportJob.current === controller) { exportJob.current = null; setProgress(null); }
     }
-  };
+  }
 
-  return (
-    <>
-      <BenchmarkHUD renderTime={renderLatency} workerTime={4} cacheHitRatio={94} memoryMB={62} fps={60} pagesCached={8} />
-      {!pdfDoc ? (
-        <div className="flex flex-col min-h-screen bg-black text-white w-full">
-          <Navbar />
-          <EmptyStateHero 
-            onFileSelected={processUploadedFile} 
-            errorMsg={errorMsg} 
-            recentFiles={recentFiles} 
-            onDeleteRecent={handleDeleteRecent}
-            onResumeSession={handleResumeSession} 
-          />
-          <Footer />
-        </div>
-      ) : (
-        <div className={`app-container ${isFullscreen ? 'zen-mode' : ''}`}>
-          {isMobile && isSidebarOpen && pdfDoc && (
-            <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
-          )}
+  if (!opened) return <div className="flex min-h-screen flex-col bg-black text-white">
+    <Navbar /><EmptyStateHero onFileSelected={openFile} opening={opening} errorMsg={errorMsg}
+      recentFiles={recentFiles} onForget={forget} onResume={entry => openFile(null, entry)} /><Footer />
+  </div>;
 
-          <Sidebar
-            file={file}
-            pdfDoc={pdfDoc}
-            numPages={numPages}
-            selectedTheme={selectedTheme}
-            setSelectedTheme={setSelectedTheme}
-            customTheme={customTheme}
-            setCustomTheme={setCustomTheme}
-            mode={mode}
-            setMode={setMode}
-            themeStrength={themeStrength}
-            setThemeStrength={setThemeStrength}
-            adaptiveThreshold={adaptiveThreshold}
-            setAdaptiveThreshold={setAdaptiveThreshold}
-            docProfile={docProfile}
-            setDocProfile={setDocProfile}
-            quality={quality}
-            setQuality={setQuality}
-            brightness={brightness}
-            setBrightness={setBrightness}
-            contrast={contrast}
-            setContrast={setContrast}
-            boldness={boldness}
-            setBoldness={setBoldness}
-            isProcessing={isProcessing}
-            progress={progress}
-            clearFile={clearFile}
-            handleDownload={handleDownload}
-            isSidebarOpen={isSidebarOpen}
-            setIsSidebarOpen={setIsSidebarOpen}
-            isMobile={isMobile}
-            exportSmartTheme={exportSmartTheme}
-            setExportSmartTheme={setExportSmartTheme}
-            downloadMode={downloadMode}
-            setDownloadMode={setDownloadMode}
-            pagesToConvertStr={pagesToConvertStr}
-            setPagesToConvertStr={setPagesToConvertStr}
-            outline={outline}
-            setCurrentPage={setCurrentPage}
-            recentFiles={recentFiles}
-            onDeleteRecent={handleDeleteRecent}
-            onFileSelected={processUploadedFile}
-          />
-
-          <PDFViewer
-            pdfDoc={pdfDoc}
-            numPages={numPages}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            zoom={zoom}
-            setZoom={setZoom}
-            zoomMode={zoomMode}
-            setZoomMode={setZoomMode}
-            selectedTheme={selectedTheme}
-            setSelectedTheme={setSelectedTheme}
-            customTheme={customTheme}
-            mode={mode}
-            brightness={brightness}
-            contrast={contrast}
-            boldness={boldness}
-            themeStrength={themeStrength}
-            adaptiveThreshold={adaptiveThreshold}
-            isSidebarOpen={isSidebarOpen}
-            setIsSidebarOpen={setIsSidebarOpen}
-            isMobile={isMobile}
-            isProcessing={isProcessing}
-            onFileSelected={processUploadedFile}
-            clearFile={clearFile}
-            errorMsg={errorMsg}
-            recentFiles={recentFiles}
-            onDeleteRecent={handleDeleteRecent}
-            isBookMode={isBookMode}
-            setIsBookMode={setIsBookMode}
-            isFullscreen={isFullscreen}
-            setIsFullscreen={setIsFullscreen}
-          />
-        </div>
-      )}
-    </>
-  );
+  return <div className="app-container">
+    {isMobile && isSidebarOpen && <button aria-label="Close settings" className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />}
+    <Sidebar {...{ settings, setSettings, file: opened.file, numPages: opened.doc.numPages, savedId, saving, remember,
+      outline, exportSmartTheme, setExportSmartTheme, downloadMode, setDownloadMode, quality, setQuality,
+      pagesToConvertStr, setPagesToConvertStr, handleDownload, progress, isMobile, isSidebarOpen, errorMsg }}
+      onForget={() => forget({ id: savedId })} onClose={() => setIsSidebarOpen(false)}
+      onJump={page => { setCurrentPage(page); if (isMobile) setIsSidebarOpen(false); }}
+      onCancel={() => { exportJob.current?.abort(); setProgress({ status: 'Cancelling…' }); }} />
+    <PDFViewer key={opened.doc.loadingTask.docId} pdfDoc={opened.doc} numPages={opened.doc.numPages}
+      {...settings} {...{ currentPage, setCurrentPage, clearFile, errorMsg, isSidebarOpen, setIsSidebarOpen, isMobile }} />
+  </div>;
 }
 
 export default function App() {

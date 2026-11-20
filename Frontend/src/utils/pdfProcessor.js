@@ -1,40 +1,13 @@
 // PDF Processing engine using PDF.js and pdf-lib client-side
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib';
-import { applyThemeToImageData } from './themeEngine';
+import { applyThemeToCanvas } from './themeEngine';
 
 // Set up the PDFJS worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url
 ).toString();
-
-/**
- * Thicken text on canvas by redrawing it with small offsets.
- * @param {HTMLCanvasElement} canvas 
- * @param {number} boldness - pixel offset (e.g. 0.5 to 2.0)
- */
-export function applyBoldingToCanvas(canvas, boldness) {
-  if (!boldness || boldness <= 0) return;
-  
-  const ctx = canvas.getContext('2d');
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-  
-  const tempCtx = tempCanvas.getContext('2d');
-  tempCtx.drawImage(canvas, 0, 0);
-
-  // Redraw with directional offsets at lower opacity to dilate text lines
-  ctx.globalAlpha = 0.35;
-  ctx.drawImage(tempCanvas, -boldness, 0);
-  ctx.drawImage(tempCanvas, boldness, 0);
-  ctx.drawImage(tempCanvas, 0, -boldness);
-  ctx.drawImage(tempCanvas, 0, boldness);
-  
-  // Reset opacity
-  ctx.globalAlpha = 1.0;
-}
 
 /**
  * Loads a PDF file and returns the PDF Document object.
@@ -44,105 +17,74 @@ export function applyBoldingToCanvas(canvas, boldness) {
 export async function loadPdfDocument(file) {
   const arrayBuffer = await file.arrayBuffer();
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-  return await loadingTask.promise;
+  try {
+    return await loadingTask.promise;
+  } catch (error) {
+    await loadingTask.destroy();
+    throw error;
+  }
 }
 
-/**
- * Converts a PDF to the selected theme and compiles a new PDF bytes.
- * @param {pdfjsLib.PDFDocumentProxy} pdfDoc - PDFJS Document object
- * @param {string} themeId - Theme preset key
- * @param {object} options - Options { mode: 'smart' | 'duotone' | 'original', scale: number, brightness: number, contrast: number, boldness: number }
- * @param {function} onProgress - Progress callback ({ current, total, status })
- * @returns {Promise<Uint8Array>} Converted PDF bytes
- */
-export async function convertPdfTheme(pdfDoc, themeId, options = {}, onProgress = () => {}) {
-  const numPages = pdfDoc.numPages;
-  const scale = options.scale || 2.0; // default to 2x for high quality text
-  const mode = options.mode || 'smart';
-  const brightness = options.brightness || 0;
-  const contrast = options.contrast || 0;
-  const boldness = options.boldness || 0;
-
-  // Determine pages to convert based on custom range selection
-  const pagesToConvert = (options.pageRange && options.pageRange.length > 0)
-    ? options.pageRange
-    : Array.from({ length: numPages }, (_, i) => i + 1);
-  const totalToConvert = pagesToConvert.length;
-
-  // Create a new PDF document using pdf-lib
-  const newPdf = await PDFDocument.create();
-
-  for (let idx = 0; idx < totalToConvert; idx++) {
-    const pageNum = pagesToConvert[idx];
-    onProgress({ current: idx + 1, total: totalToConvert, status: 'processing' });
-
-    // 1. Get the PDF page
-    const page = await pdfDoc.getPage(pageNum);
-    
-    // 2. Get viewport at desired scale
-    const viewport = page.getViewport({ scale });
-    
-    // 3. Create canvas and render page
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    
-    const ctx = canvas.getContext('2d');
-    
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: viewport,
-    };
-    
-    await page.render(renderContext).promise;
-
-    // 3.5. Apply text bolding (dilation) on original page render if specified
-    if (boldness > 0) {
-      applyBoldingToCanvas(canvas, boldness);
-    }
-
-    // 4. Apply theme and adjustments to canvas image data
-    const isNormal = themeId === 'normal';
-    const hasAdjustments = brightness !== 0 || contrast !== 0;
-
-    if (!isNormal || hasAdjustments || mode === 'original') {
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      applyThemeToImageData(imgData, themeId, { 
-        mode, 
-        brightness, 
-        contrast,
-        customTheme: options.customTheme 
-      });
-      ctx.putImageData(imgData, 0, 0);
-    }
-
-    // 5. Convert canvas to png image bytes
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob(resolve, 'image/png');
-    });
-    
-    const pageImgBytes = await blob.arrayBuffer();
-
-    // 6. Embed image into pdf-lib document
-    const embeddedImg = await newPdf.embedPng(pageImgBytes);
-    
-    // In pdf-lib, page size is set in points (72 points per inch)
-    const originalViewport = page.getViewport({ scale: 1.0 });
-    const newPage = newPdf.addPage([originalViewport.width, originalViewport.height]);
-    
-    newPage.drawImage(embeddedImg, {
-      x: 0,
-      y: 0,
-      width: originalViewport.width,
-      height: originalViewport.height,
-    });
+// Bound both area and edge length, including unusually narrow or rotated pages.
+export function boundedViewport(page, requestedScale, maxPixels = 4_000_000) {
+  const base = page.getViewport({ scale: 1 });
+  const { width, height } = base;
+  if (!(width > 0 && height > 0 && Number.isFinite(width * height))) {
+    throw new Error('This page has invalid dimensions.');
   }
+  const scale = Math.min(requestedScale, 8192 / Math.max(width, height),
+    Math.sqrt(maxPixels / (width * height)));
+  return page.getViewport({ scale });
+}
 
-  onProgress({ current: totalToConvert, total: totalToConvert, status: 'saving' });
-  
-  // Save PDF as Uint8Array bytes
-  const pdfBytes = await newPdf.save();
-  return pdfBytes;
+export async function convertPdfTheme(pdfDoc, themeId, options = {}, onProgress = () => {}) {
+  const { signal } = options;
+  const pages = options.pageRange?.length ? options.pageRange :
+    Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1);
+  const output = await PDFDocument.create();
+  let embeddedBytes = 0;
+  for (const [index, pageNum] of pages.entries()) {
+    signal?.throwIfAborted();
+    onProgress({ current: index + 1, total: pages.length, status: 'processing' });
+    const page = await pdfDoc.getPage(pageNum);
+    signal?.throwIfAborted();
+    const base = page.getViewport({ scale: 1 });
+    const viewport = boundedViewport(page, options.scale || 3, 9_000_000);
+    const width = Math.max(1, Math.floor(viewport.width));
+    const height = Math.max(1, Math.floor(viewport.height));
+    const canvas = document.createElement('canvas');
+    let task;
+    const cancel = () => task?.cancel();
+    try {
+      canvas.width = width; canvas.height = height;
+      task = page.render({ canvasContext: canvas.getContext('2d'), viewport, background: '#ffffff' });
+      signal?.addEventListener('abort', cancel, { once: true });
+      await task.promise;
+      signal?.throwIfAborted();
+      await applyThemeToCanvas(canvas, themeId, options);
+      signal?.throwIfAborted();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      signal?.throwIfAborted();
+      if (!blob) throw new Error(`Could not encode page ${pageNum}. Try a lower download quality.`);
+      canvas.width = canvas.height = 0;
+      const image = await output.embedPng(await blob.arrayBuffer());
+      signal?.throwIfAborted();
+      // Compress each opaque page now so pdf-lib can release its decoded RGB buffer.
+      await image.embed();
+      embeddedBytes += output.context.lookup(image.ref).getContentsSize();
+      if (embeddedBytes > 64 * 1024 ** 2) {
+        throw new Error('This export is too large. Choose a smaller page range or lower resolution.');
+      }
+      signal?.throwIfAborted();
+      output.addPage([base.width, base.height]).drawImage(image, { width: base.width, height: base.height });
+    } finally {
+      signal?.removeEventListener('abort', cancel);
+      canvas.width = canvas.height = 0;
+    }
+  }
+  signal?.throwIfAborted();
+  onProgress({ status: 'saving', current: pages.length, total: pages.length });
+  return output.save();
 }
 
 /**

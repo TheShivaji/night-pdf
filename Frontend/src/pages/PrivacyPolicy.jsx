@@ -1,4 +1,3 @@
-import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Lock, EyeOff, Server, ArrowUpRight } from 'lucide-react';
@@ -7,19 +6,19 @@ import { motion } from 'framer-motion';
 const pillars = [
   { icon: <Lock className="w-5 h-5" />, title: 'Local-Only Processing', desc: "Every PDF operation—rendering, theme switching, pixel inversion—runs natively inside your browser sandbox using your machine's RAM." },
   { icon: <EyeOff className="w-5 h-5" />, title: 'Zero Server Uploads', desc: 'We maintain no remote storage or file databases. Your documents never leave your device, ever.' },
-  { icon: <Server className="w-5 h-5" />, title: 'No Data Profiling', desc: 'We capture no reading history, no document metadata, and have no user profiles to sell to advertisers.' },
+  { icon: <Server className="w-5 h-5" />, title: 'No Data Profiling', desc: 'Reading positions for remembered files stay in this browser.' },
 ];
 
 const sections = [
   {
     num: '01',
     title: 'Information We Do Not Collect',
-    body: 'We do not collect, monitor, store, or transmit the text or metadata of any documents loaded into Night PDF. The application functions entirely locally in your web browser session. No outbound web requests containing document assets or canvas rendering coordinates are ever dispatched.',
+    body: 'NightPDF reads and processes PDF bytes on your device. Opening a document does not send its filename, contents or reading position to our server. The website and its fonts require network requests when uncached.',
   },
   {
     num: '02',
     title: 'Browser Storage & IndexedDB',
-    body: "To support reading continuity (remembering recent files and last read pages), the application writes parameters to your browser's private local databases (IndexedDB & LocalStorage). This data is kept sandboxed on your machine. You can wipe it at any time via standard browser settings.",
+    body: "New PDFs are session-only. Choosing Remember this PDF stores the complete file, its name and your reading position in IndexedDB on this browser profile. Anyone using that profile may reopen it. Previously saved copies remain available. Use Forget to delete a saved copy or an old history entry. Display preferences use localStorage. Clearing site data removes all local copies and preferences.",
   },
   {
     num: '03',
@@ -36,13 +35,13 @@ const sections = [
 
 const flow = [
   { step: '01', title: 'Document Loading', desc: "You drop a PDF. The browser File API reads it into your tab's isolated sandbox memory (RAM). Nothing is transmitted." },
-  { step: '02', title: 'Theme Rendering', desc: 'Each page is drawn onto an HTML5 canvas. The HSL lightness inversion filter processes pixels in real-time on your local GPU.' },
-  { step: '03', title: 'Reading History', desc: 'Recent file metadata (title + page position) is stored in IndexedDB locally. Never synced to cloud. Clearable in one click.' },
+  { step: '02', title: 'Theme Rendering', desc: 'Each page is drawn onto an HTML5 canvas. Local JavaScript processes the page colors, using a web worker when available.' },
+  { step: '03', title: 'Reading History', desc: 'Remember saves a full copy and page position locally. Forget removes that saved copy; closing the reader ends the current session.' },
   { step: '04', title: 'Download', desc: 'Clicking download triggers client-side PDF assembly. The themed file is saved directly to your device via a browser-generated URL.' },
 ];
 
 export default function PrivacyPolicy() {
-  const lastUpdated = 'June 21, 2026';
+  const lastUpdated = 'November 20, 2026';
 
   return (
     <>
@@ -194,7 +193,7 @@ export default function PrivacyPolicy() {
               <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-2xl font-extrabold text-white mb-2">
                 Your documents stay yours.
               </h2>
-              <p className="text-[13px] text-zinc-500 max-w-sm">Open Night PDF — private, offline, and free. No account required.</p>
+              <p className="text-[13px] text-zinc-500 max-w-sm">Open Night PDF — private and free. No account required.</p>
             </div>
             <Link
               to="/"
